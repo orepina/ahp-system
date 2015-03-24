@@ -31,7 +31,9 @@ class Node(models.Model):
     def __str__(self):
         return self.info
 
+
 class Level(models.Model):
+    order = models.IntegerField()
     info = models.CharField(max_length=30, default='')
     project = models.ForeignKey(Project)
     def __str__(self):
