@@ -11,8 +11,10 @@ from django.http import JsonResponse
 from django.core import serializers
 from django.db.models import F
 
-from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes
+from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes, Question
 
+
+#везде учесть проблему повторения, отсутсвия, обработка ошибок и все такое
 
 def index(request):
     #bu = json.loads(request.body)
@@ -34,6 +36,7 @@ def index(request):
     return HttpResponse(json.dumps(edges), content_type="application/json")
 
 
+#get node, level, edge
 def common_hierarchy(request):
     nodes = serializers.serialize('json', Node.objects.all())
     edges = serializers.serialize('json', Edge.objects.all())
@@ -47,6 +50,7 @@ def common_hierarchy(request):
     }), content_type="application/json")
 
 
+#put level(add, change, delete)
 def level(request):
     data = json.loads(request.body)
     info = data['info']
@@ -67,6 +71,7 @@ def level(request):
     return HttpResponse('')
 
 
+#put node(add, change, delete)
 #пока что без построения иерархии, а вообще нужно делать Edge, получать родителя или находить по уровням
 def node(request):
     data = json.loads(request.body)
@@ -100,8 +105,113 @@ def order_consist(order_of_modified):
     """
 
 
+#get groups
+def groups_list(request):
+    groups = serializers.serialize('json', Group.objects.all())
+    return HttpResponse(json.dumps({
+        'groups': groups
+    }), content_type="application/json")
 
 
+#put group(add, change, delete)
+def group(request):
+    data = json.loads(request.body)
+    group_id = data['group_id']
+    info = data['info']
+    project = Project.objects.get(pk=1)
+    if data['act_type'] == 'add':
+        Group.objects.create(info=info, project=project)
+    if data['act_type'] == 'edit':
+        g = Group.objects.get(pk=group_id)
+        g.info = info
+        g.save()
+    if data['act_type'] == 'delet':
+        g = Group.objects.get(pk=group_id)
+        g.delete()
+        #удаление из GroupNodes?
+    return HttpResponse('')
+
+
+#get groups nodes
+def group_nodes_list(request):
+    #filter на type
+    groups_nodes = serializers.serialize('json', GroupNodes.objects.all())
+    return HttpResponse(json.dumps({
+        'group_nodes': groups_nodes
+    }), content_type="application/json")
+
+
+#TODO что делать если снимаем галочку? каждый раз перезаписывать все целиком?(сейчас так и делаем)
+#put groups nodes(add, delete)
+def group_nodes(request):
+    GroupNodes.objects.all().delete()
+    data = json.loads(request.body)
+    for group in data:
+        g = Group.objects.get(pk=group)
+        for node in data[group]:
+            n = Node.objects.get(pk=node)
+            GroupNodes.objects.create(group=g, node=n, type='for_form', count=0)
+            #GroupNodes.objects.update_or_create(group=g, node=n, type='for_form', count=0)
+    return HttpResponse('')
+
+
+#put question(add,delete,edit)
+def question(request):
+    data = json.loads(request.body)
+    question_id = data['question_id']
+    group_id = data['group_id']
+    info = data['info']
+    if data['act_type'] == 'add':
+        g = Group.objects.get(pk=group_id)
+        Question.objects.create(group=g, name=info, description=info)
+    if data['act_type'] == 'edit':
+        q = Question.objects.get(pk=question_id)
+        q.name = info
+        q.description = info
+        q.save()
+    if data['act_type'] == 'delet':
+        q = Question.objects.get(pk=question_id)
+        q.delete()
+    return HttpResponse('')
+
+
+#get all question
+def group_question_list(request):
+    group_questions = serializers.serialize('json', Question.objects.all())
+    return HttpResponse(json.dumps({
+        'group_questions': group_questions
+    }), content_type="application/json")
+
+
+#put user(add,delete,edit)
+def user(request):
+    data = json.loads(request.body)
+    user_id = data['user_id']
+    info = data['info']
+    project = Project.objects.get(pk=1)
+    group_id = data['group_id']
+    if data['act_type'] == 'add':
+        group = Group.objects.get(pk=group_id)
+        User.objects.create(info=info, email='', id_hash='', group=group, project=project)
+    if data['act_type'] == 'edit':
+        g = Group.objects.get(pk=group_id)
+        u = User.objects.get(pk=user_id)
+        u.info = info
+        u.group = g
+        u.save()
+    if data['act_type'] == 'delet':
+        u = User.objects.get(pk=user_id)
+        u.delete()
+    return HttpResponse('')
+
+
+#get all users
+def users_list(request):
+    print >> sys.stderr, User.objects.all()
+    users = serializers.serialize('json', User.objects.all())
+    return HttpResponse(json.dumps({
+        'users': users
+    }), content_type="application/json")
 
 
 def user_hierarchy(request, user_id):

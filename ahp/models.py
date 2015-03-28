@@ -52,6 +52,18 @@ class GroupNodes(models.Model):
     count = models.IntegerField()
 
 
+class Question(models.Model):
+    group = models.ForeignKey(Group)
+    name = models.CharField(max_length=30, default='')
+    description = models.CharField(max_length=30, default='')
+
+
+class UserInfo(models.Model):
+    user = models.ForeignKey(User)
+    question = models.ForeignKey(Question)
+    answer = models.CharField(max_length=30, default='')
+
+
 class LevelNodes(models.Model):
     level = models.ForeignKey(Level)
     node = models.ForeignKey(Node)
