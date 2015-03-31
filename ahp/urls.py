@@ -14,6 +14,8 @@ urlpatterns = patterns('',
     url(r'^group_question_list/$', views.group_question_list, name='group_question_list'),
     url(r'^users_list/$', views.users_list, name='users_list'),
     url(r'^user/$', views.user, name='user'),
+    url(r'^questions/$', views.questions, name='questions'),
+    url(r'^email/$', views.email, name='email'),
 
     url(r'^$', views.index, name='index'),
     url(r'^(?P<user_id>\d+)/$', views.user_hierarchy, name='user_hierarchy'),

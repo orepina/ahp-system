@@ -95,7 +95,8 @@ def node(request):
 
 
 def order_consist(order_of_modified):
-    Level.objects.filter(order__gt=order_of_modified).update(order=F('order')-1)
+    l = Level.objects.filter(order__gt=order_of_modified).update(order=F('order')-1)
+
     """
     levels = Level.objects.filter(order__gt=order_of_modified)
     for level in levels:
@@ -187,16 +188,20 @@ def group_question_list(request):
 def user(request):
     data = json.loads(request.body)
     user_id = data['user_id']
-    info = data['info']
+    name = data['name']
+    description = data['description']
+    email = data['email']
     project = Project.objects.get(pk=1)
     group_id = data['group_id']
     if data['act_type'] == 'add':
         group = Group.objects.get(pk=group_id)
-        User.objects.create(info=info, email='', id_hash='', group=group, project=project)
+        User.objects.create(name=name, description='', email=email, id_hash='', group=group, project=project)
     if data['act_type'] == 'edit':
         g = Group.objects.get(pk=group_id)
         u = User.objects.get(pk=user_id)
-        u.info = info
+        u.name = name
+        u.description = description
+        u.name = name
         u.group = g
         u.save()
     if data['act_type'] == 'delet':
@@ -212,6 +217,34 @@ def users_list(request):
     return HttpResponse(json.dumps({
         'users': users
     }), content_type="application/json")
+
+
+#put all questions
+def questions(request):
+    Question.objects.all().delete()
+    data = json.loads(request.body)
+    print >> sys.stderr, data
+    for question in data:
+        n = question['name']
+        d = question['description']
+        g_id = question['group']
+        g = Group.objects.get(pk=g_id)
+        Question.objects.create(group=g, name=n, description=d)
+    return HttpResponse('')
+
+
+#send email !
+def email(request):
+    data = json.load(request.body)
+    user_id = data['user_id']
+    text = data['text']
+    user = User.objects.get(pk=user_id)
+    #1. генерируем ссылку и сохраняем user hash  в БД!
+    #2. делаем форму (уже готовый шалон должен быть, в который просто подставляется инфа
+    #3. отправляем на мыло
+    #4. возвращаем ответ что все прерасно отправлено
+
+
 
 
 def user_hierarchy(request, user_id):

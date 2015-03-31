@@ -76,7 +76,6 @@ CORS_ALLOW_HEADERS = (
         'authorization',
         'x-csrftoken',
         'csrftoken'
-
 )
 CORS_EXPOSE_HEADERS = ()
 CORS_PREFLIGHT_MAX_AGE = 86400

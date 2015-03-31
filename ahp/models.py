@@ -17,12 +17,13 @@ class Group(models.Model):
 
 class User(models.Model):
     email = models.CharField(max_length=30, default='')
-    info = models.CharField(max_length=30, default='')
+    name = models.CharField(max_length=30, default='')
+    description = models.CharField(max_length=30, default='')
     id_hash = models.CharField(max_length=15, default='')
     group = models.ForeignKey(Group)
     project = models.ForeignKey(Project)
     def __str__(self):
-        return self.info
+        return self.name
 
 
 class Node(models.Model):

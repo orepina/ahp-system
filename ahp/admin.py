@@ -1,5 +1,5 @@
 from django.contrib import admin
-from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes
+from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes, Question
 
 
 
@@ -13,5 +13,6 @@ admin.site.register(Edge)
 admin.site.register(Weight)
 admin.site.register(Level)
 admin.site.register(LevelNodes)
+admin.site.register(Question)
 
 # Register your models here.
