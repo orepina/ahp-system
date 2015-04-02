@@ -10,11 +10,12 @@ from django.core.mail import send_mail, BadHeaderError
 from django.http import JsonResponse
 from django.core import serializers
 from django.db.models import F
+from django.template import RequestContext, loader
 
 from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes, Question
 
 
-#везде учесть проблему повторения, отсутсвия, обработка ошибок и все такое
+#TODO везде учесть проблему повторения, отсутсвия, обработка ошибок и все такое
 
 def index(request):
     #bu = json.loads(request.body)
@@ -34,6 +35,58 @@ def index(request):
     #return JsonResponse(edges)
     print >> sys.stderr, edges
     return HttpResponse(json.dumps(edges), content_type="application/json")
+
+def test(request):
+    #вообще тут гет запрос (в урле передается хэш, по нему выбираем пользователя->группу-> нужные вопросы)
+    # а ответ пользователя - гет с параметрами в теле + заголовок
+    hash_user_id = '809ffca6e3'
+    user = User.objects.get(id_hash=hash_user_id)
+    user_group = user.group
+    question_list = Question.objects.filter(group=user_group)
+    #group_nodes = GroupNodes.objects.filter(group=user_group)
+    levels = Level.objects.order_by('order')
+    level_nodes = []
+    for level in levels:
+        nodes = LevelNodes.objects.filter(level=level)
+        l = {}
+        l['name'] = level
+        l['nodes'] = []
+        for node in nodes:
+            if group_has_node(user_group, node):
+                print >> sys.stderr, group_has_node(user_group, node)
+                l['nodes'].append(node)
+        level_nodes.append(l)
+    context = {
+        'question_list': question_list,
+        'level_nodes': level_nodes
+    }
+    return render(request, 'ahp/test.html', context)
+
+
+def group_has_node(group, node):
+    group_nodes = GroupNodes.objects.filter(group=group)
+    for group_node in group_nodes:
+        if node.node.pk == group_node.node.pk:
+            return True
+    return False
+
+
+
+
+def ahp_participant(request, hash_user_id):
+    #get_object_or_404
+    #видать мжно не все импортировать из БД, по врешнему ключу можно идти у импоортнутого объекта
+    user = User.objects.get(id_hash=hash_user_id)
+    user_group = user.group
+    question_list = Question.objects.filter(group=user_group)
+    nodes_list = GroupNodes.objects.filter(group=user_group)
+    nodes = Node.objects.all() #нам нужны не все, а только те, которые в nodes_list
+    levels = Level.objects.all()
+    template = loader.get_template('ahp/test.html')
+    context = RequestContext(request, {
+        'question_list': question_list,
+    })
+    return HttpResponse(template.render(context))
 
 
 #get node, level, edge
@@ -201,7 +254,7 @@ def user(request):
         u = User.objects.get(pk=user_id)
         u.name = name
         u.description = description
-        u.name = name
+        u.email = email
         u.group = g
         u.save()
     if data['act_type'] == 'delet':
@@ -212,7 +265,6 @@ def user(request):
 
 #get all users
 def users_list(request):
-    print >> sys.stderr, User.objects.all()
     users = serializers.serialize('json', User.objects.all())
     return HttpResponse(json.dumps({
         'users': users
@@ -223,8 +275,8 @@ def users_list(request):
 def questions(request):
     Question.objects.all().delete()
     data = json.loads(request.body)
-    print >> sys.stderr, data
     for question in data:
+        print >> sys.stderr, question
         n = question['name']
         d = question['description']
         g_id = question['group']
@@ -235,15 +287,35 @@ def questions(request):
 
 #send email !
 def email(request):
-    data = json.load(request.body)
+    data = json.loads(request.body)
     user_id = data['user_id']
     text = data['text']
     user = User.objects.get(pk=user_id)
-    #1. генерируем ссылку и сохраняем user hash  в БД!
-    #2. делаем форму (уже готовый шалон должен быть, в который просто подставляется инфа
+    user.id_hash = hash_id(user_id)
+    user.save()
+    return HttpResponse('') #4. возвращаем ответ что все прерасно отправлено!!!
+    #send_email('Olya', 'Privet','enot444@yandex.ru')
+
+    #1. генерируем ссылку и сохраняем user hash  в БД!- check
+    #------это отдельный этап, выполняется когда пользователь переходит по ссылке2. делаем форму (уже готовый шалон должен быть, в который просто подставляется инфа - вопросы + иерархия ДЛЯ ПРАВИЛЬНОЙ ФОРМ НУЖНА ГРУППА
+    #2.1 формируем текст для отправки в котором должна присутсвовать ссылка
     #3. отправляем на мыло
     #4. возвращаем ответ что все прерасно отправлено
+    #5. нужна ли у user галочка ему письмо отправлено или хватит наличия id_hash?
 
+
+def hash_id(id):
+    hash_str = hashlib.sha1(str(id)).hexdigest()
+    hash = hash_str[-10:]
+    print >> sys.stderr, hash
+    return hash
+
+def send_email(header, text, email):
+    try:
+        # заголовок,  текст,  адрес рассылки,  адрес получателя,  и непоятный параметр
+        send_mail(header, text, 'qjkzzz@gmail.com', [email], fail_silently=False)
+    except BadHeaderError:
+            return HttpResponse('Invalid header found.')
 
 
 

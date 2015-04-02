@@ -4,14 +4,16 @@ import hashlib
 
 class Project(models.Model):
     info = models.CharField(max_length=30, default='')
-    def __str__(self):
+    def __unicode__(self):
         return self.info
 
 
 class Group(models.Model):
     info = models.CharField(max_length=30, default='')
     project = models.ForeignKey(Project)
-    def __str__(self):
+    #def __str__(self):
+    #    return self.info.encode('ascii','replace')
+    def __unicode__(self):
         return self.info
 
 
@@ -22,14 +24,14 @@ class User(models.Model):
     id_hash = models.CharField(max_length=15, default='')
     group = models.ForeignKey(Group)
     project = models.ForeignKey(Project)
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
 
 class Node(models.Model):
     info = models.CharField(max_length=30, default='')
     project = models.ForeignKey(Project)
-    def __str__(self):
+    def __unicode__(self):
         return self.info
 
 
@@ -37,7 +39,7 @@ class Level(models.Model):
     order = models.IntegerField()
     info = models.CharField(max_length=30, default='')
     project = models.ForeignKey(Project)
-    def __str__(self):
+    def __unicode__(self):
         return self.info
 
 
@@ -68,6 +70,8 @@ class UserInfo(models.Model):
 class LevelNodes(models.Model):
     level = models.ForeignKey(Level)
     node = models.ForeignKey(Node)
+    def __unicode__(self):
+        return self.node
 
 
 class Edge(models.Model):
