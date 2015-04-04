@@ -16,9 +16,11 @@ urlpatterns = patterns('',
     url(r'^user/$', views.user, name='user'),
     url(r'^questions/$', views.questions, name='questions'),
     url(r'^email/$', views.email, name='email'),
-    url(r'^test/$', views.test, name='test'),
-
 
     url(r'^$', views.index, name='index'),
-    url(r'^(?P<user_id>\d+)/$', views.user_hierarchy, name='user_hierarchy'),
+
+    url(r'^(?P<hash_user_id>\w+)/$', views.form_for_participant, name='form_for_participant'),
+
+
+    #url(r'^(?P<user_id>\d+)/$', views.user_hierarchy, name='user_hierarchy'),
 )

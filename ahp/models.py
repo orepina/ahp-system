@@ -59,6 +59,8 @@ class Question(models.Model):
     group = models.ForeignKey(Group)
     name = models.CharField(max_length=30, default='')
     description = models.CharField(max_length=30, default='')
+    def __unicode__(self):
+        return self.name
 
 
 class UserInfo(models.Model):

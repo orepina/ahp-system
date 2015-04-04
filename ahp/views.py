@@ -4,18 +4,19 @@ import sys
 import hashlib
 import datetime
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.core.mail import send_mail, BadHeaderError
-from django.http import JsonResponse
 from django.core import serializers
 from django.db.models import F
 from django.template import RequestContext, loader
 
-from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes, Question
+from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes, Question, UserInfo
 
+from django import forms
 
 #TODO везде учесть проблему повторения, отсутсвия, обработка ошибок и все такое
+#TODO класс для форм, может класс связь с моделями
 
 def index(request):
     #bu = json.loads(request.body)
@@ -36,31 +37,72 @@ def index(request):
     print >> sys.stderr, edges
     return HttpResponse(json.dumps(edges), content_type="application/json")
 
-def test(request):
-    #вообще тут гет запрос (в урле передается хэш, по нему выбираем пользователя->группу-> нужные вопросы)
-    # а ответ пользователя - гет с параметрами в теле + заголовок
-    hash_user_id = '809ffca6e3'
+class QuestionForm(forms.Form):
+    your_name = forms.CharField(label='Your name', max_length=100)
+
+
+#сколько раз разрешать пользователю отправлять данные?
+def form_for_participant(request, hash_user_id):
+    #hash_user_id = '809ffca6e3'
+    #TODO get or 404
     user = User.objects.get(id_hash=hash_user_id)
     user_group = user.group
-    question_list = Question.objects.filter(group=user_group)
-    #group_nodes = GroupNodes.objects.filter(group=user_group)
-    levels = Level.objects.order_by('order')
-    level_nodes = []
-    for level in levels:
-        nodes = LevelNodes.objects.filter(level=level)
-        l = {}
-        l['name'] = level
-        l['nodes'] = []
-        for node in nodes:
-            if group_has_node(user_group, node):
-                print >> sys.stderr, group_has_node(user_group, node)
-                l['nodes'].append(node)
-        level_nodes.append(l)
-    context = {
-        'question_list': question_list,
-        'level_nodes': level_nodes
-    }
-    return render(request, 'ahp/test.html', context)
+    #print >> sys.stderr, 'user  ' , user, 'user_group  ' , user_group
+    if request.method == 'GET':
+        #form = NameForm(request.POST)
+        question_list = Question.objects.filter(group=user_group)
+        levels = Level.objects.order_by('order')
+        level_nodes = []
+        for level in levels:
+            nodes = LevelNodes.objects.filter(level=level)
+            if level.info == 'alternatives':
+                a = {}
+                a['name'] = level
+                a['nodes'] = []
+                for node in nodes:
+                    if group_has_node(user_group, node):
+                        a['nodes'].append(node)
+            else:
+                l = {}
+                l['name'] = level
+                l['nodes'] = []
+                for node in nodes:
+                    if group_has_node(user_group, node):
+                        l['nodes'].append(node)
+                level_nodes.append(l)
+        level_nodes.append(a)
+        context = {
+            'question_list': question_list,
+            'level_nodes': level_nodes,
+            #'form': form
+        }
+        return render(request, 'ahp/test.html', context)
+
+    if request.method == 'POST':
+        print >> sys.stderr, request.POST
+        # что делать если мы разрешии отправлять несколько раз, а пользователь снял галочку? (удалять все)
+        UserNodes.objects.filter(user=user).delete()
+        for field in request.POST:
+            if field!='node':
+                question = Question.objects.get(pk=field)
+                answer = request.POST[field]
+                #print >> sys.stderr,'answer  ' , answer, 'question  ' , question
+                user_info = UserInfo.objects.update_or_create(user=user, question=question,defaults=dict(answer=answer))
+                #print >> sys.stderr,'user_info  ' , user_info
+            else:
+                for node_id in request.POST.getlist('node'):
+                    node = Node.objects.get(pk=node_id)
+                    user_nodes = UserNodes.objects.create(user=user, node=node)
+                    print >> sys.stderr, 'node  ' , node
+                    print >> sys.stderr, 'UserNodes  ' , user_nodes
+                    group_nodes = GroupNodes.objects.get(group=user_group, node=node)
+                    group_nodes.type = 'user_choice'
+                    group_nodes.count = group_nodes.count+1
+                    group_nodes.save()
+                    print >> sys.stderr, 'group_nodes  ', group_nodes
+        return HttpResponse('спасибки')
+    #вообще тут гет запрос (в урле передается хэш, по нему выбираем пользователя->группу-> нужные вопросы)
+    # а ответ пользователя - гет с параметрами в теле + заголовок
 
 
 def group_has_node(group, node):
@@ -69,24 +111,6 @@ def group_has_node(group, node):
         if node.node.pk == group_node.node.pk:
             return True
     return False
-
-
-
-
-def ahp_participant(request, hash_user_id):
-    #get_object_or_404
-    #видать мжно не все импортировать из БД, по врешнему ключу можно идти у импоортнутого объекта
-    user = User.objects.get(id_hash=hash_user_id)
-    user_group = user.group
-    question_list = Question.objects.filter(group=user_group)
-    nodes_list = GroupNodes.objects.filter(group=user_group)
-    nodes = Node.objects.all() #нам нужны не все, а только те, которые в nodes_list
-    levels = Level.objects.all()
-    template = loader.get_template('ahp/test.html')
-    context = RequestContext(request, {
-        'question_list': question_list,
-    })
-    return HttpResponse(template.render(context))
 
 
 #get node, level, edge
@@ -196,6 +220,7 @@ def group_nodes_list(request):
 
 
 #TODO что делать если снимаем галочку? каждый раз перезаписывать все целиком?(сейчас так и делаем)
+#еще count 1 добавлять и тип менять
 #put groups nodes(add, delete)
 def group_nodes(request):
     GroupNodes.objects.all().delete()
@@ -293,11 +318,14 @@ def email(request):
     user = User.objects.get(pk=user_id)
     user.id_hash = hash_id(user_id)
     user.save()
+    header = 'Исследование'
+    url = 'http://127.0.0.1:8000/ahp/' + user.id_hash
+    text = data['text'] + '    ' + url
+    email = user.email
+    send_email(header, text, email)
     return HttpResponse('') #4. возвращаем ответ что все прерасно отправлено!!!
-    #send_email('Olya', 'Privet','enot444@yandex.ru')
 
-    #1. генерируем ссылку и сохраняем user hash  в БД!- check
-    #------это отдельный этап, выполняется когда пользователь переходит по ссылке2. делаем форму (уже готовый шалон должен быть, в который просто подставляется инфа - вопросы + иерархия ДЛЯ ПРАВИЛЬНОЙ ФОРМ НУЖНА ГРУППА
+
     #2.1 формируем текст для отправки в котором должна присутсвовать ссылка
     #3. отправляем на мыло
     #4. возвращаем ответ что все прерасно отправлено
@@ -307,8 +335,8 @@ def email(request):
 def hash_id(id):
     hash_str = hashlib.sha1(str(id)).hexdigest()
     hash = hash_str[-10:]
-    print >> sys.stderr, hash
     return hash
+
 
 def send_email(header, text, email):
     try:
@@ -316,16 +344,3 @@ def send_email(header, text, email):
         send_mail(header, text, 'qjkzzz@gmail.com', [email], fail_silently=False)
     except BadHeaderError:
             return HttpResponse('Invalid header found.')
-
-
-
-def user_hierarchy(request, user_id):
-    #user = get_object_or_404(User, pk=user_id)
-    #а вот тут мы получаешь хэш, вычисляем айди(или берем из БД) и генерим форму по имеющимся для данного id данным в БД
-    #context = {'user': user}#ваще передаем tree
-    #return render(request, 'ahp/user_hierarchy.html', context)
-    return HttpResponse(user_id+' ')
-
-
-def user_hierarchy_vote(request, user_id):
-    return HttpResponse('')
