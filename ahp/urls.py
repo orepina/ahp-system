@@ -16,11 +16,11 @@ urlpatterns = patterns('',
     url(r'^user/$', views.user, name='user'),
     url(r'^questions/$', views.questions, name='questions'),
     url(r'^email/$', views.email, name='email'),
-
+    url(r'^group_nodes_for_comparison/$', views.group_nodes_for_comparison, name='group_nodes_for_comparison'),
+    url(r'^send_comparison_form/$', views.send_comparison_form, name='send_comparison_form'),
     url(r'^$', views.index, name='index'),
 
     url(r'^(?P<hash_user_id>\w+)/$', views.form_for_participant, name='form_for_participant'),
 
 
-    #url(r'^(?P<user_id>\d+)/$', views.user_hierarchy, name='user_hierarchy'),
 )

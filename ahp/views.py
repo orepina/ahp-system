@@ -9,6 +9,7 @@ from django.shortcuts import render, get_object_or_404
 from django.core.mail import send_mail, BadHeaderError
 from django.core import serializers
 from django.db.models import F
+from django.db.models import Max
 from django.template import RequestContext, loader
 
 from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes, Question, UserInfo
@@ -40,7 +41,7 @@ def index(request):
 class QuestionForm(forms.Form):
     your_name = forms.CharField(label='Your name', max_length=100)
 
-
+# +пользователь может добавлять новые критерии?
 #сколько раз разрешать пользователю отправлять данные?
 def form_for_participant(request, hash_user_id):
     #hash_user_id = '809ffca6e3'
@@ -97,6 +98,7 @@ def form_for_participant(request, hash_user_id):
                     print >> sys.stderr, 'UserNodes  ' , user_nodes
                     group_nodes = GroupNodes.objects.get(group=user_group, node=node)
                     group_nodes.type = 'user_choice'
+                    #можно накрутить количство, поэтому может в UserNodes добавить group и агрегировать по ней
                     group_nodes.count = group_nodes.count+1
                     group_nodes.save()
                     print >> sys.stderr, 'group_nodes  ', group_nodes
@@ -106,6 +108,7 @@ def form_for_participant(request, hash_user_id):
 
 
 def group_has_node(group, node):
+    #GroupNodes.objects.get(group=group, node=node)
     group_nodes = GroupNodes.objects.filter(group=group)
     for group_node in group_nodes:
         if node.node.pk == group_node.node.pk:
@@ -132,43 +135,91 @@ def level(request):
     data = json.loads(request.body)
     info = data['info']
     level_id = data['level_id']
-    project = Project.objects.get(pk=1)
     order = data['order']
     if data['act_type'] == 'add':
-        Level.objects.create(order=order, info=info, project=project)
+        Level.objects.create(order=order, info=info)
     #пока что редактировани только инфы(нет перемещений)
     if data['act_type'] == 'edit':
-        l = Level.objects.get(pk=level_id)
-        l.info = info
-        l.save()
+        level = Level.objects.get(pk=level_id)
+        level.info = info
+        level.save()
     if data['act_type'] == 'delet':
-        l = Level.objects.get(pk=level_id)
-        l.delete()
+        #удаляем все edge c таким потомком и переформируем
+        level = Level.objects.get(pk=level_id)
+        edge_consist(level)
+        node_consist(level)
+        level.delete()
         order_consist(order)
     return HttpResponse('')
 
 
+def edge_consist(level):
+    parent_nodes, children_nodes = level_edges_nodes(level)
+    for parent_node in parent_nodes:
+        for child_node in children_nodes:
+            Edge.objects.create(node=child_node.node, parent=parent_node.node, level=level)
+    Edge.objects.filter(level=level).delete()
+
+
+def node_consist(level):
+    level_nodes = LevelNodes.objects.filter(level=level)
+    for level_node in level_nodes:
+        Node.objects.get(pk=level_node.node.pk).delete()
+
 #put node(add, change, delete)
-#пока что без построения иерархии, а вообще нужно делать Edge, получать родителя или находить по уровням
+#пока что без нормального ветвления
 def node(request):
     data = json.loads(request.body)
     node_id = data['node_id']
     level_id = data['level_id']
     info = data['info']
-    project = Project.objects.get(pk=1)
+
+    level = Level.objects.get(pk=level_id)
+    parent_nodes, children_nodes = level_edges_nodes(level)
+
     if data['act_type'] == 'add':
-        n = Node.objects.create(info=info, project=project)
-        l = Level.objects.get(pk=level_id)
-        LevelNodes.objects.create(level=l, node=n)
+        node = Node.objects.create(info=info)
+        LevelNodes.objects.create(level=level, node=node)
+        for parent_node in parent_nodes:
+            Edge.objects.create(node=node, parent=parent_node.node, level=level)
+        for child_node in children_nodes:
+            Edge.objects.create(node=child_node.node, parent=node, level=level)
     #пока что редактировани только инфы(без перемещений в другие уровни)
     if data['act_type'] == 'edit':
-        n = Node.objects.get(pk=node_id)
-        n.info = info
-        n.save()
+        node = Node.objects.get(pk=node_id)
+        node.info = info
+        node.save()
     if data['act_type'] == 'delet':
-        n = Node.objects.get(pk=node_id)
-        n.delete()
+        node = Node.objects.get(pk=node_id)
+        #может и не понадобиттся? вдруг удаяляется автоматически вместе с вершиной
+        Edge.objects.filter(node=node).delete()
+        Edge.objects.filter(parent=node).delete()
+        node.delete()
     return HttpResponse('')
+
+
+def level_edges_nodes(level):
+    max_order = Level.objects.all().aggregate(Max('order'))['order__max']
+    if level.order == 2 and level.order == max_order:
+        l_parent = Level.objects.get(order=0)
+        l_child = Level.objects.get(order=1)
+    elif level.order == 2 :
+        l_parent = Level.objects.get(order=0)
+        l_child = Level.objects.get(order=level.order+1)
+    elif  level.order == 1:
+        l_parent = Level.objects.get(order=max_order)
+        l_child = None
+    elif  level.order == max_order:
+        l_parent = Level.objects.get(order=level.order-1)
+        l_child = Level.objects.get(order=1)
+    else:
+        l_parent = Level.objects.get(order=level.order-1)
+        l_child = Level.objects.get(order=level.order+1)
+    parent_nodes = LevelNodes.objects.filter(level=l_parent)
+    children_nodes = LevelNodes.objects.filter(level=l_child)
+    print >> sys.stderr, parent_nodes
+    print >> sys.stderr, children_nodes
+    return parent_nodes, children_nodes
 
 
 def order_consist(order_of_modified):
@@ -196,9 +247,8 @@ def group(request):
     data = json.loads(request.body)
     group_id = data['group_id']
     info = data['info']
-    project = Project.objects.get(pk=1)
     if data['act_type'] == 'add':
-        Group.objects.create(info=info, project=project)
+        Group.objects.create(info=info)
     if data['act_type'] == 'edit':
         g = Group.objects.get(pk=group_id)
         g.info = info
@@ -269,11 +319,10 @@ def user(request):
     name = data['name']
     description = data['description']
     email = data['email']
-    project = Project.objects.get(pk=1)
     group_id = data['group_id']
     if data['act_type'] == 'add':
         group = Group.objects.get(pk=group_id)
-        User.objects.create(name=name, description='', email=email, id_hash='', group=group, project=project)
+        User.objects.create(name=name, description='', email=email, id_hash='', group=group)
     if data['act_type'] == 'edit':
         g = Group.objects.get(pk=group_id)
         u = User.objects.get(pk=user_id)
@@ -344,3 +393,88 @@ def send_email(header, text, email):
         send_mail(header, text, 'qjkzzz@gmail.com', [email], fail_silently=False)
     except BadHeaderError:
             return HttpResponse('Invalid header found.')
+
+
+#может быть вообще не нужен save
+def group_nodes_for_comparison(request):
+    GroupNodes.objects.filter(type='for comparison').update(type='for form')
+    data = json.loads(request.body)
+    for group in data:
+        g = Group.objects.get(pk=group)
+        for node in data[group]:
+            n = Node.objects.get(pk=node)
+            group_node = GroupNodes.objects.get(group=g, node=n)
+            group_node.type = 'for comparison'
+            group_node.save()
+    return HttpResponse('')
+
+
+def send_comparison_form(request):
+    group_nodes_for_comparison(request)
+    group = Group.objects.get(info='group 1')
+    pairwise_list = []
+    pairwise_list = data_for_comparison(group)
+    #send emails - отдельному пользователю или группе?
+    return HttpResponse('')
+
+
+def form_for_comparison(request, hash_user_id):
+    #hash_user_id = '809ffca6e3'
+    #TODO get or 404
+    user = User.objects.get(id_hash=hash_user_id)
+    user_group = user.group
+    #print >> sys.stderr, 'user  ' , user, 'user_group  ' , user_group
+    if request.method == 'GET':
+        pairwise_list = data_for_comparison(group)
+        context = {
+            'pairwise_list': pairwise_list,
+            #'form': form
+        }
+        return render(request, 'ahp/test.html', context)
+
+
+    #print >> sys.stderr, pairwise_list
+    # куда теперь сохраняем и что вообще делаем Weight??
+    #а вот тут нужен метод для формирования формы
+    # нужно формировать пары для сравнений, для этого нужно юзер->группа->из группы вершины с типом 'for comparison'
+    # дальше нужна структура дерева - это Level, LevelNodes и Edge (и Node за компанию)
+    # для вывода достаточно. обработка индекса согласованности на питоне. результаты в Weight
+
+    return HttpResponse('')
+
+
+def data_for_comparison(group):
+    group_nodes_ids = GroupNodes.objects.values_list('node', flat=True).filter(type='for comparison', group=group)
+    ids = set(group_nodes_ids) | set('1')
+    edges = Edge.objects.all()
+    levels_queryset = Level.objects.order_by('order')
+    levels = list(levels_queryset)
+    alt_level = levels.pop(1)
+    levels.append(alt_level)
+    pairwise_list = []
+    for level in levels:
+        nodes = LevelNodes.objects.filter(node__in=set(ids), level=level)
+        for node in nodes:
+            children_nodes = Edge.objects.filter(parent=node.node)
+            if len(children_nodes)>0:
+                pairwise_generation(children_nodes, node, pairwise_list)
+    return pairwise_list
+
+
+
+def pairwise_generation(nodes, parent, pairwise_list):
+    include_nodes = []
+    for node_left in nodes:
+        #print sys.stderr,'node_left  ', node_left
+        include_nodes.append(node_left)
+        #print sys.stderr,'include_nodes  ', include_nodes
+        #print sys.stderr,'set(nodes).difference(include_nodes)  ', set(nodes).difference(include_nodes)
+        for node_right in set(nodes).difference(include_nodes):
+            pairwise_obj = {}
+            pairwise_obj['parent'] = parent.node
+            pairwise_obj['left_node'] = node_left.node
+            pairwise_obj['right_node']= node_right.node
+            pairwise_list.append(pairwise_obj)
+
+
+
