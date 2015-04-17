@@ -3,7 +3,11 @@ import json
 import sys
 import hashlib
 import datetime
+import numpy
 
+from collections import defaultdict
+
+from django import forms
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.core.mail import send_mail, BadHeaderError
@@ -14,7 +18,7 @@ from django.template import RequestContext, loader
 
 from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes, Question, UserInfo
 
-from django import forms
+
 
 #TODO везде учесть проблему повторения, отсутсвия, обработка ошибок и все такое
 #TODO класс для форм, может класс связь с моделями
@@ -419,28 +423,83 @@ def send_comparison_form(request):
 
 
 def form_for_comparison(request, hash_user_id):
+    line = [{'val':9, 'view':9},
+            {'val':8, 'view':8},
+            {'val':7, 'view':7},
+            {'val':6, 'view':6},
+            {'val':5, 'view':5},
+            {'val':4, 'view':4},
+            {'val':3, 'view':3},
+            {'val':2, 'view':2},
+            {'val':1, 'view':1},
+            {'val':1.0/2, 'view':2},
+            {'val':1.0/3, 'view':3},
+            {'val':1.0/4, 'view':4},
+            {'val':1.0/5, 'view':5},
+            {'val':1.0/6, 'view':6},
+            {'val':1.0/7, 'view':7},
+            {'val':1.0/8, 'view':8},
+            {'val':1.0/9, 'view':9},
+            ]
     #hash_user_id = '809ffca6e3'
     #TODO get or 404
     user = User.objects.get(id_hash=hash_user_id)
     user_group = user.group
-    #print >> sys.stderr, 'user  ' , user, 'user_group  ' , user_group
+    pairwise_list, parent_list = data_for_comparison(user_group)
     if request.method == 'GET':
-        pairwise_list = data_for_comparison(group)
         context = {
+            'parent_list': parent_list,
             'pairwise_list': pairwise_list,
-            #'form': form
+            'line': line
         }
-        return render(request, 'ahp/test.html', context)
-
-
-    #print >> sys.stderr, pairwise_list
+        return render(request, 'ahp/test1.html', context)
+    if request.method == 'POST':
+        bunch_nodes_list = defaultdict(list)
+        for index in request.POST:
+            #print >> sys.stderr, line[int(request.POST[index])]['val']
+            child = {'left_node': pairwise_list[int(index)]['left_node'], 'right_node': pairwise_list[int(index)]['right_node'], 'priority': line[int(request.POST[index])]['val']}
+            bunch_nodes_list[pairwise_list[int(index)]['parent']].append(child)
+        for parent in bunch_nodes_list:
+            OS, vector_priority, node_list = calculate_weigth(bunch_nodes_list[parent])
+            print >> sys.stderr, OS, vector_priority, node_list
+            print >> sys.stderr, OS, type(vector_priority), type(node_list)
+            for index, node in enumerate(node_list):
+                edge = Edge.objects.get(parent=parent, node=node)
+                weight = Weight.objects.create(node=edge, weight=vector_priority[index], user=user)
+                print >> sys.stderr, edge
+                print >> sys.stderr, node, vector_priority[index]
+        return HttpResponse('спасибки')
     # куда теперь сохраняем и что вообще делаем Weight??
-    #а вот тут нужен метод для формирования формы
-    # нужно формировать пары для сравнений, для этого нужно юзер->группа->из группы вершины с типом 'for comparison'
-    # дальше нужна структура дерева - это Level, LevelNodes и Edge (и Node за компанию)
-    # для вывода достаточно. обработка индекса согласованности на питоне. результаты в Weight
 
-    return HttpResponse('')
+
+def calculate_weigth(bunch_nodes):
+    SS = [0.0, 0.0, 0.0, 0.58, 0.90, 1.12, 1.24, 1.32, 1.41, 1.45, 1.49, 1.51, 1.48, 1.56, 1.57, 1.59]
+    node_list = []
+    for couple_nodes in bunch_nodes:
+        if node_list.count(couple_nodes['left_node']) == 0:
+            node_list.append(couple_nodes['left_node'])
+        if node_list.count(couple_nodes['right_node']) == 0:
+            node_list.append(couple_nodes['right_node'])
+    size = len(node_list)
+    Matrix =  numpy.ones((size, size))
+    for couple_nodes in bunch_nodes:
+        l_i = node_list.index(couple_nodes['left_node'])
+        r_i = node_list.index(couple_nodes['right_node'])
+        Matrix[l_i][r_i] = float(couple_nodes['priority'])
+        Matrix[r_i][l_i] = 1.0/float(couple_nodes['priority'])
+
+    eigenvalues, eigenvectors = numpy.linalg.eig(Matrix)
+    lyambd_max = eigenvalues.max()
+    index_max = eigenvalues.argmax()
+    eigenvector =  eigenvectors[:,index_max]
+    norma = eigenvector.sum()
+    vector_priority =  eigenvector/eigenvector.sum()
+    IS = (lyambd_max - size)/(size-1)
+    if size > 2 :
+        OS = IS/SS[size]
+    else:
+        OS = 0
+    return OS, vector_priority, node_list
 
 
 def data_for_comparison(group):
@@ -452,13 +511,16 @@ def data_for_comparison(group):
     alt_level = levels.pop(1)
     levels.append(alt_level)
     pairwise_list = []
+    parent_list = []
     for level in levels:
         nodes = LevelNodes.objects.filter(node__in=set(ids), level=level)
         for node in nodes:
-            children_nodes = Edge.objects.filter(parent=node.node)
+            children_nodes = Edge.objects.filter(parent=node.node, node__in=set(ids))
             if len(children_nodes)>0:
+                parent_list.append(node)
+                #вот тут добавить парента и функция ниже возвращает детей и тут же создаем объект
                 pairwise_generation(children_nodes, node, pairwise_list)
-    return pairwise_list
+    return pairwise_list, parent_list
 
 
 
@@ -474,6 +536,7 @@ def pairwise_generation(nodes, parent, pairwise_list):
             pairwise_obj['parent'] = parent.node
             pairwise_obj['left_node'] = node_left.node
             pairwise_obj['right_node']= node_right.node
+
             pairwise_list.append(pairwise_obj)
 
 

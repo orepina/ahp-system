@@ -20,7 +20,7 @@ urlpatterns = patterns('',
     url(r'^send_comparison_form/$', views.send_comparison_form, name='send_comparison_form'),
     url(r'^$', views.index, name='index'),
 
-    url(r'^(?P<hash_user_id>\w+)/$', views.form_for_participant, name='form_for_participant'),
-
+    url(r'^hierarchy/(?P<hash_user_id>\w+)/$', views.form_for_participant, name='form_for_participant'),
+    url(r'^comparison/(?P<hash_user_id>\w+)/$', views.form_for_comparison, name='form_for_comparison'),
 
 )
