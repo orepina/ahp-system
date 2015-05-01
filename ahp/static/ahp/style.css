@@ -1,0 +1,42 @@
+input[type="radio"]{
+    display: none;
+}
+
+label{
+    width: 40px;
+    height: 40px;
+    background-color: rgb(184, 207, 207);
+    margin: 0 -4px 0px 0px;
+    padding-top: 10px;
+    border: black solid 1px;
+}
+
+input[type="radio"]:checked+label{
+    background-color: rgb(221, 127, 152);
+}
+
+.pairwise_container {
+    text-align: center;
+    font-size: 20px;
+    border: black solid 1px;
+    background-color: rgb(239, 247, 249);
+}
+
+.pairwise_line {
+    font-size: 15px;
+}
+
+.pairwise_nodes {
+    width: 100%;
+    display: block;
+    height: 40px;
+    padding: 0 60px;
+}
+
+.pairwise_left_node {
+    float: left;
+}
+
+.pairwise_right_node {
+    float: right;
+}

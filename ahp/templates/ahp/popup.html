@@ -1,0 +1,184 @@
+{% verbatim angular %}
+<div id="popup-bg" ng-hide="act_type==''">
+    <form role="form" id="popup">
+        <div class="close" ng-click="closePopup()">x</div>
+        <!--TODO проверка полей- пустое, совпадает с созданными, проверка написания мыла -->
+        <div ng-show="entity_type=='level'">
+            <div ng-show="act_type=='add'">
+                <div  class="form-group">
+                    <label class="right inline">Имя нового уровня:</label>
+                    <input class="form-control" type="text" ng-model="name"/>
+                </div>
+                <div  class="form-group">
+                    <label class="right inline">Описание уровня:</label>
+                    <textarea class="form-control" ng-model="description"></textarea>
+                </div>
+                <div>
+                    <button class="small radius" ng-click="postLevel()">Добавить уровень</button>
+                </div>
+            </div>
+
+
+            <div ng-show="act_type=='edit'">
+                <div  class="form-group">
+                    <label class="right inline">Имя уровня:</label>
+                    <input class="form-control" type="text" ng-model="name"/>
+                </div>
+                <div  class="form-group">
+                    <label class="right inline">Описание уровня:</label>
+                    <textarea class="form-control" ng-model="description"></textarea>
+                </div>
+                <div>
+                    <button class="small radius" ng-click="postLevel()">Сохранить изменения</button>
+                </div>
+            </div>
+
+            <div ng-show="act_type=='delet'">
+                <div> Вы действительно хотите удалить уровень {{name}} вместе со всеми критериями на нем?
+                    <button class="small radius" ng-click="postLevel()">Удалить уровень</button>
+                </div>
+            </div>
+        </div>
+
+
+        <div ng-show="entity_type=='node'">
+            <div ng-show="act_type=='add'">
+                <div  class="form-group">
+                    <label class="right inline">Имя нового критерия:</label>
+                    <input class="form-control" type="text" ng-model="name"/>
+                </div>
+                <div  class="form-group">
+                    <label class="right inline">Описание критерия:</label>
+                    <textarea class="form-control" ng-model="description"></textarea>
+                </div>
+                <div>
+                    <button class="small radius" ng-click="postNode()">Добавить критерий</button>
+                </div>
+            </div>
+
+
+            <div ng-show="act_type=='edit'">
+                <div  class="form-group">
+                    <label class="right inline">Имя критерия:</label>
+                    <input class="form-control" type="text" ng-model="name"/>
+                </div>
+                <div  class="form-group">
+                    <label class="right inline">Описание критерия:</label>
+                    <textarea class="form-control" ng-model="description"></textarea>
+                </div>
+                <div>
+                    <button class="small radius" ng-click="postNode()">Сохранить изменения</button>
+                </div>
+            </div>
+
+            <div ng-show="act_type=='delet'">
+                <div> Вы действительно хотите удалить критерий {{name}}?
+                    <button class="small radius" ng-click="postNode()">Удалить критерий</button>
+                </div>
+            </div>
+        </div>
+
+
+        <div ng-show="entity_type=='group'">
+            <div ng-show="act_type=='add'">
+                <div  class="form-group">
+                    <label class="right inline">Имя новой группы:</label>
+                    <input class="form-control" type="text" ng-model="name"/>
+                </div>
+                <div  class="form-group">
+                    <label class="right inline">Описание группы:</label>
+                    <textarea class="form-control" ng-model="description"></textarea>
+                </div>
+                <div>
+                    <button class="small radius" ng-click="postGroup()">Добавить группу</button>
+                </div>
+            </div>
+
+            <div ng-show="act_type=='edit'">
+                <div  class="form-group">
+                    <label class="right inline">Имя группы:</label>
+                    <input class="form-control" type="text" ng-model="name"/>
+                </div>
+                <div  class="form-group">
+                    <label class="right inline">Описание группы:</label>
+                    <textarea class="form-control" ng-model="description"></textarea>
+                </div>
+                <div>
+                    <button class="small radius" ng-click="postGroup()">Сохранить изменения</button>
+                </div>
+            </div>
+
+            <div ng-show="act_type=='delet'">
+                <div> Вы действительно хотите удалить группу {{name}} вместе со всеми экспертами?
+                    <button class="small radius" ng-click="postGroup()">Удалить группу</button>
+                </div>
+            </div>
+        </div>
+
+
+        <div ng-show="entity_type=='user'">
+            <div ng-show="act_type=='add'">
+                <div  class="form-group">
+                    <label class="right inline">Имя нового эксперта:</label>
+                    <input class="form-control" type="text" ng-model="name"/>
+                </div>
+                <div  class="form-group">
+                    <label class="right inline">Описание эксперта:</label>
+                    <textarea class="form-control" ng-model="description"></textarea>
+                </div>
+                <div  class="form-group">
+                    <label class="right inline">email:</label>
+                    <textarea class="form-control" ng-model="email"></textarea>
+                </div>
+
+                <div>
+                    <button class="small radius" ng-click="postUser()">Добавить эксперта</button>
+                </div>
+            </div>
+
+            <div ng-show="act_type=='edit'">
+                <div  class="form-group">
+                    <label class="right inline">Имя эксперта:</label>
+                    <input class="form-control" type="text" ng-model="name"/>
+                </div>
+                <div  class="form-group">
+                    <label class="right inline">Описание:</label>
+                    <textarea class="form-control" ng-model="description"></textarea>
+                </div>
+                <div  class="form-group">
+                    <label class="right inline">email:</label>
+                    <textarea class="form-control" ng-model="email"></textarea>
+                </div>
+
+                <div>
+                    <button class="small radius" ng-click="postUser()">Сохранить изменения</button>
+                </div>
+            </div>
+
+            <div ng-show="act_type=='delet'">
+                <div> Вы действительно хотите удалить эксперта {{name}}?
+                    <button class="small radius" ng-click="postUser()">Удалить</button>
+                </div>
+            </div>
+        </div>
+
+
+        <div ng-show="entity_type=='email'">
+            <div ng-show="email==''">
+                Вы не указали почтовый адрес для отправки письма. Укажите адрес и повторите действия
+            </div>
+            <div ng-hide="email==''">
+                На указанный адрес {{email}} будет выслано письмо следующего содержания:
+                блабла {{name}} вот те сслка проходи и выбира критерии цель такая-то ....
+                <button ng-click="postEmail()" class="btn btn-default">Отправить</button>
+                <button ng-click="closePopup()" class="btn btn-default">Отмена</button>
+            </div>
+        </div>
+
+        <div ng-show="entity_type=='error'">
+            {{message}}
+        </div>
+
+    </form>
+</div>
+{% endverbatim angular %}

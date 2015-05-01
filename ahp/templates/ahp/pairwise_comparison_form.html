@@ -1,0 +1,64 @@
+{% load staticfiles %}
+<link rel="stylesheet" type="text/css" href="{% static 'ahp/style.css' %}" />
+<link rel="stylesheet" href="{% static 'ahp/bootstrap.css' %}" />
+
+{% for  pairwise_bunch in bunches %}
+<div class="container">
+    <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+    <form action="" method="post">
+    <!--    {% csrf_token %}-->
+        <div>
+            <div class="pairwise_container">
+            {{ pairwise_bunch.parent }}
+
+                {% for  pairwise_obj in pairwise_bunch.children %}
+                <div>
+                    <div class="pairwise_nodes">
+                        {{pairwise_obj.value}}
+                        <span class="pairwise_left_node">{{ pairwise_obj.left_node }}</span>
+                        <span class="pairwise_right_node">{{ pairwise_obj.right_node }}</span>
+                    </div>
+
+                    <div class="pairwise_line">
+                    {% for obj in line %}
+                        <input {% ifequal  pairwise_obj.value forloop.counter0 %} checked="checked" {% endifequal %} id={{forloop.parentloop.parentloop.counter0}}_{{forloop.parentloop.counter0}}_{{forloop.counter0}} type='radio' name={{forloop.parentloop.counter0}} value={{forloop.counter0}}>
+                        <label for={{forloop.parentloop.parentloop.counter0}}_{{forloop.parentloop.counter0}}_{{forloop.counter0}} class="pairwise_val">{{obj.view}}</label>
+                    {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div>
+        {{messages}}
+        </div>
+
+
+        <div class="pagination">
+            <span class="step-links">
+
+                <span class="current">
+                    Page {{ bunches.number }} of {{ bunches.paginator.num_pages }}.
+                </span>
+                {% if bunches.has_next %}
+                    <input type="submit" value="Дальше" name="next">
+                    {% ifequal action "recalculation" %}
+                        <input type="submit" value="Автопересчет" name="auto_revision">
+                    {% endifequal %}
+                {% else %}
+                    <input type="submit" value="Окей" name="next">
+                    {% ifequal action "recalculation" %}
+                        <input type="submit" value="Автопересчет" name="auto_revision">
+                    {% endifequal %}
+                {% endif %}
+            </span>
+        </div>
+
+    </form>
+    </div>
+    </div>
+</div>
+
+{% endfor %}

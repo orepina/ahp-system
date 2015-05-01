@@ -9,19 +9,26 @@ from collections import defaultdict
 
 from django import forms
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, render_to_response, redirect
 from django.core.mail import send_mail, BadHeaderError
 from django.core import serializers
 from django.db.models import F
 from django.db.models import Max
 from django.template import RequestContext, loader
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes, Question, UserInfo
 
 
-
 #TODO везде учесть проблему повторения, отсутсвия, обработка ошибок и все такое
 #TODO класс для форм, может класс связь с моделями
+
+def main(request):
+    return render(request, 'ahp/index.html')
+
+
+def popup(request):
+    return render(request, 'ahp/popup.html')
 
 def index(request):
     #bu = json.loads(request.body)
@@ -42,8 +49,6 @@ def index(request):
     print >> sys.stderr, edges
     return HttpResponse(json.dumps(edges), content_type="application/json")
 
-class QuestionForm(forms.Form):
-    your_name = forms.CharField(label='Your name', max_length=100)
 
 # +пользователь может добавлять новые критерии?
 #сколько раз разрешать пользователю отправлять данные?
@@ -52,67 +57,61 @@ def form_for_participant(request, hash_user_id):
     #TODO get or 404
     user = User.objects.get(id_hash=hash_user_id)
     user_group = user.group
-    #print >> sys.stderr, 'user  ' , user, 'user_group  ' , user_group
     if request.method == 'GET':
-        #form = NameForm(request.POST)
-        question_list = Question.objects.filter(group=user_group)
-        levels = Level.objects.order_by('order')
-        level_nodes = []
-        for level in levels:
-            nodes = LevelNodes.objects.filter(level=level)
-            if level.info == 'alternatives':
-                a = {}
-                a['name'] = level
-                a['nodes'] = []
-                for node in nodes:
-                    if group_has_node(user_group, node):
-                        a['nodes'].append(node)
-            else:
-                l = {}
-                l['name'] = level
-                l['nodes'] = []
-                for node in nodes:
-                    if group_has_node(user_group, node):
-                        l['nodes'].append(node)
-                level_nodes.append(l)
-        level_nodes.append(a)
-        context = {
-            'question_list': question_list,
-            'level_nodes': level_nodes,
-            #'form': form
-        }
-        return render(request, 'ahp/test.html', context)
+        if user.hierarchy_form == 'check':
+            HttpResponse('ты уже заполнял')
+        else:
+            question_list = Question.objects.filter(group=user_group)
+            levels = Level.objects.order_by('order')
+            level_nodes = []
+            for level in levels:
+                nodes = LevelNodes.objects.filter(level=level)
+                if level.name == 'alternatives':
+                    a = {}
+                    a['name'] = level
+                    a['nodes'] = []
+                    for node in nodes:
+                        if group_has_node(user_group, node):
+                            a['nodes'].append(node)
+                    level_nodes.append(a)
+                else:
+                    l = {}
+                    l['name'] = level
+                    l['nodes'] = []
+                    for node in nodes:
+                        if group_has_node(user_group, node):
+                            l['nodes'].append(node)
+                    level_nodes.append(l)
+            context = {
+                'question_list': question_list,
+                'level_nodes': level_nodes,
+            }
+            return render(request, 'ahp/hierarchy_form.html', context)
 
     if request.method == 'POST':
-        print >> sys.stderr, request.POST
+        #TODO тк мы вносим в БД информацию что форма пройдена(user.hierarchy_form = 'check'), то можно заблокировать открытие формы и не перезаписывать данные
         # что делать если мы разрешии отправлять несколько раз, а пользователь снял галочку? (удалять все)
         UserNodes.objects.filter(user=user).delete()
         for field in request.POST:
             if field!='node':
                 question = Question.objects.get(pk=field)
                 answer = request.POST[field]
-                #print >> sys.stderr,'answer  ' , answer, 'question  ' , question
                 user_info = UserInfo.objects.update_or_create(user=user, question=question,defaults=dict(answer=answer))
-                #print >> sys.stderr,'user_info  ' , user_info
             else:
                 for node_id in request.POST.getlist('node'):
                     node = Node.objects.get(pk=node_id)
                     user_nodes = UserNodes.objects.create(user=user, node=node)
-                    print >> sys.stderr, 'node  ' , node
-                    print >> sys.stderr, 'UserNodes  ' , user_nodes
                     group_nodes = GroupNodes.objects.get(group=user_group, node=node)
                     group_nodes.type = 'user_choice'
                     #можно накрутить количство, поэтому может в UserNodes добавить group и агрегировать по ней
                     group_nodes.count = group_nodes.count+1
                     group_nodes.save()
-                    print >> sys.stderr, 'group_nodes  ', group_nodes
+        user.hierarchy_form = 'check'
+        user.save()
         return HttpResponse('спасибки')
-    #вообще тут гет запрос (в урле передается хэш, по нему выбираем пользователя->группу-> нужные вопросы)
-    # а ответ пользователя - гет с параметрами в теле + заголовок
 
 
 def group_has_node(group, node):
-    #GroupNodes.objects.get(group=group, node=node)
     group_nodes = GroupNodes.objects.filter(group=group)
     for group_node in group_nodes:
         if node.node.pk == group_node.node.pk:
@@ -137,15 +136,17 @@ def common_hierarchy(request):
 #put level(add, change, delete)
 def level(request):
     data = json.loads(request.body)
-    info = data['info']
+    name = data['name']
+    description = data['description']
     level_id = data['level_id']
     order = data['order']
     if data['act_type'] == 'add':
-        Level.objects.create(order=order, info=info)
+        Level.objects.create(order=order, name=name, description=description )
     #пока что редактировани только инфы(нет перемещений)
     if data['act_type'] == 'edit':
         level = Level.objects.get(pk=level_id)
-        level.info = info
+        level.name = name
+        level.description = description
         level.save()
     if data['act_type'] == 'delet':
         #удаляем все edge c таким потомком и переформируем
@@ -176,13 +177,13 @@ def node(request):
     data = json.loads(request.body)
     node_id = data['node_id']
     level_id = data['level_id']
-    info = data['info']
-
+    name = data['name']
+    description = data['description']
     level = Level.objects.get(pk=level_id)
     parent_nodes, children_nodes = level_edges_nodes(level)
 
     if data['act_type'] == 'add':
-        node = Node.objects.create(info=info)
+        node = Node.objects.create(name=name, description=description)
         LevelNodes.objects.create(level=level, node=node)
         for parent_node in parent_nodes:
             Edge.objects.create(node=node, parent=parent_node.node, level=level)
@@ -191,7 +192,8 @@ def node(request):
     #пока что редактировани только инфы(без перемещений в другие уровни)
     if data['act_type'] == 'edit':
         node = Node.objects.get(pk=node_id)
-        node.info = info
+        node.name = name
+        node.description = description
         node.save()
     if data['act_type'] == 'delet':
         node = Node.objects.get(pk=node_id)
@@ -216,6 +218,9 @@ def level_edges_nodes(level):
     elif  level.order == max_order:
         l_parent = Level.objects.get(order=level.order-1)
         l_child = Level.objects.get(order=1)
+    elif  level.order == 0:
+        l_parent = None
+        l_child = None
     else:
         l_parent = Level.objects.get(order=level.order-1)
         l_child = Level.objects.get(order=level.order+1)
@@ -229,20 +234,17 @@ def level_edges_nodes(level):
 def order_consist(order_of_modified):
     l = Level.objects.filter(order__gt=order_of_modified).update(order=F('order')-1)
 
-    """
-    levels = Level.objects.filter(order__gt=order_of_modified)
-    for level in levels:
-        new_order = level['order']-1
-        level['order'] = new_order
-        level.save()
-    """
-
 
 #get groups
 def groups_list(request):
     groups = serializers.serialize('json', Group.objects.all())
+    groups_count = {}
+    for group in Group.objects.all():
+         groups_count[group.pk] = { 'for_hierarchy': GroupNodes.objects.filter(group=group).count(),
+                                    'for_comparison': GroupNodes.objects.filter(group=group, type='for comparison form').count()}
     return HttpResponse(json.dumps({
-        'groups': groups
+        'groups': groups,
+        'groups_count': groups_count
     }), content_type="application/json")
 
 
@@ -250,12 +252,14 @@ def groups_list(request):
 def group(request):
     data = json.loads(request.body)
     group_id = data['group_id']
-    info = data['info']
+    name = data['name']
+    description = data['description']
     if data['act_type'] == 'add':
-        Group.objects.create(info=info)
+        Group.objects.create(name=name, description=description)
     if data['act_type'] == 'edit':
         g = Group.objects.get(pk=group_id)
-        g.info = info
+        g.name = name
+        g.descrpition = descrpition
         g.save()
     if data['act_type'] == 'delet':
         g = Group.objects.get(pk=group_id)
@@ -273,9 +277,7 @@ def group_nodes_list(request):
     }), content_type="application/json")
 
 
-#TODO что делать если снимаем галочку? каждый раз перезаписывать все целиком?(сейчас так и делаем)
-#еще count 1 добавлять и тип менять
-#put groups nodes(add, delete)
+#TODO делать ли отдельно для каждой группы?
 def group_nodes(request):
     GroupNodes.objects.all().delete()
     data = json.loads(request.body)
@@ -283,8 +285,19 @@ def group_nodes(request):
         g = Group.objects.get(pk=group)
         for node in data[group]:
             n = Node.objects.get(pk=node)
-            GroupNodes.objects.create(group=g, node=n, type='for_form', count=0)
-            #GroupNodes.objects.update_or_create(group=g, node=n, type='for_form', count=0)
+            GroupNodes.objects.create(group=g, node=n, type='for hierarchy form', count=0)
+    return HttpResponse('')
+
+
+def chosen_group_nodes(request):
+    data = json.loads(request.body)
+    nodes = data['nodes']
+    group = data['group']
+    GroupNodes.objects.filter(group=group).delete()
+    for node in nodes:
+        n = Node.objects.get(pk=node)
+        g = Group.objects.get(pk=group)
+        GroupNodes.objects.create(group=g, node=n, type='for hierarchy form', count=0)
     return HttpResponse('')
 
 
@@ -293,14 +306,15 @@ def question(request):
     data = json.loads(request.body)
     question_id = data['question_id']
     group_id = data['group_id']
-    info = data['info']
+    name = data['name']
+    descrpition = data['descrpition']
     if data['act_type'] == 'add':
         g = Group.objects.get(pk=group_id)
-        Question.objects.create(group=g, name=info, description=info)
+        Question.objects.create(group=g, name=name, description=description)
     if data['act_type'] == 'edit':
         q = Question.objects.get(pk=question_id)
-        q.name = info
-        q.description = info
+        q.name = name
+        q.description = description
         q.save()
     if data['act_type'] == 'delet':
         q = Question.objects.get(pk=question_id)
@@ -324,9 +338,10 @@ def user(request):
     description = data['description']
     email = data['email']
     group_id = data['group_id']
+    confidence = 1
     if data['act_type'] == 'add':
         group = Group.objects.get(pk=group_id)
-        User.objects.create(name=name, description='', email=email, id_hash='', group=group)
+        User.objects.create(name=name, description='', email=email, id_hash='', group=group, confidence=1)
     if data['act_type'] == 'edit':
         g = Group.objects.get(pk=group_id)
         u = User.objects.get(pk=user_id)
@@ -368,21 +383,26 @@ def email(request):
     data = json.loads(request.body)
     user_id = data['user_id']
     text = data['text']
+    act_type = data['act_type']
     user = User.objects.get(pk=user_id)
     user.id_hash = hash_id(user_id)
+    if act_type == 'send_email_hierarchy':
+        header = 'Исследование1'
+        url = 'http://127.0.0.1:8000/ahp/hierarchy/' + user.id_hash
+        text = data['text'] + '    ' + url
+        email = user.email
+        send_email(header, text, email)
+        user.hierarchy_form = 'email'
+    if act_type == 'send_email_comparison':
+        header = 'Исследование2'
+        url = 'http://127.0.0.1:8000/ahp/comparison/' + user.id_hash
+        text = data['text'] + '    ' + url
+        email = user.email
+        send_email(header, text, email)
+        # if пиьсмо прекрасно отправлено
+        user.comparison_form = 'email'
     user.save()
-    header = 'Исследование'
-    url = 'http://127.0.0.1:8000/ahp/' + user.id_hash
-    text = data['text'] + '    ' + url
-    email = user.email
-    send_email(header, text, email)
-    return HttpResponse('') #4. возвращаем ответ что все прерасно отправлено!!!
-
-
-    #2.1 формируем текст для отправки в котором должна присутсвовать ссылка
-    #3. отправляем на мыло
-    #4. возвращаем ответ что все прерасно отправлено
-    #5. нужна ли у user галочка ему письмо отправлено или хватит наличия id_hash?
+    return HttpResponse('')
 
 
 def hash_id(id):
@@ -396,33 +416,29 @@ def send_email(header, text, email):
         # заголовок,  текст,  адрес рассылки,  адрес получателя,  и непоятный параметр
         send_mail(header, text, 'qjkzzz@gmail.com', [email], fail_silently=False)
     except BadHeaderError:
-            return HttpResponse('Invalid header found.')
+        return HttpResponse('Invalid header found.')
 
 
 #может быть вообще не нужен save
-def group_nodes_for_comparison(request):
-    GroupNodes.objects.filter(type='for comparison').update(type='for form')
+#сохранение выбранных вершин для всех групп
+def chosen_group_nodes_for_comparison(request):
     data = json.loads(request.body)
-    for group in data:
+    group = data['group']
+    nodes = data['nodes']
+    GroupNodes.objects.filter(group=group, type='for comparison form').update(type='for hierarchy form')
+    for node in nodes:
         g = Group.objects.get(pk=group)
-        for node in data[group]:
-            n = Node.objects.get(pk=node)
-            group_node = GroupNodes.objects.get(group=g, node=n)
-            group_node.type = 'for comparison'
-            group_node.save()
-    return HttpResponse('')
-
-
-def send_comparison_form(request):
-    group_nodes_for_comparison(request)
-    group = Group.objects.get(info='group 1')
-    pairwise_list = []
-    pairwise_list = data_for_comparison(group)
-    #send emails - отдельному пользователю или группе?
+        n = Node.objects.get(pk=node)
+        group_node = GroupNodes.objects.get(group=g, node=n)
+        group_node.type = 'for comparison form'
+        group_node.save()
     return HttpResponse('')
 
 
 def form_for_comparison(request, hash_user_id):
+    #hash_user_id = '809ffca6e3'
+    #TODO get or 404
+    #  TODO - делать ли кнопку назад? (если да, то в GET считываем из БД, тогда в БД добавить поле с view и наверное даже новую таблицу(потому что пары формируются при обращении, в БД только вектор)
     line = [{'val':9, 'view':9},
             {'val':8, 'view':8},
             {'val':7, 'view':7},
@@ -441,39 +457,78 @@ def form_for_comparison(request, hash_user_id):
             {'val':1.0/8, 'view':8},
             {'val':1.0/9, 'view':9},
             ]
-    #hash_user_id = '809ffca6e3'
-    #TODO get or 404
     user = User.objects.get(id_hash=hash_user_id)
     user_group = user.group
-    pairwise_list, parent_list = data_for_comparison(user_group)
+    pairwise_list = data_for_comparison(user_group)
+
+    paginator = Paginator(pairwise_list, 1) # Show 25 contacts per page
+    page = request.GET.get('page')
+    try:
+        bunches = paginator.page(page)
+    except PageNotAnInteger:
+        bunches = paginator.page(1)
+    except EmptyPage:
+        bunches = paginator.page(paginator.num_pages)
     if request.method == 'GET':
-        context = {
-            'parent_list': parent_list,
-            'pairwise_list': pairwise_list,
-            'line': line
-        }
-        return render(request, 'ahp/test1.html', context)
+        messages = ''
+        action = ''
+        return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages, action: 'action' })
+
     if request.method == 'POST':
-        bunch_nodes_list = defaultdict(list)
-        for index in request.POST:
-            #print >> sys.stderr, line[int(request.POST[index])]['val']
-            child = {'left_node': pairwise_list[int(index)]['left_node'], 'right_node': pairwise_list[int(index)]['right_node'], 'priority': line[int(request.POST[index])]['val']}
-            bunch_nodes_list[pairwise_list[int(index)]['parent']].append(child)
-        for parent in bunch_nodes_list:
-            OS, vector_priority, node_list = calculate_weigth(bunch_nodes_list[parent])
-            print >> sys.stderr, OS, vector_priority, node_list
-            print >> sys.stderr, OS, type(vector_priority), type(node_list)
-            for index, node in enumerate(node_list):
-                edge = Edge.objects.get(parent=parent, node=node)
-                weight = Weight.objects.create(node=edge, weight=vector_priority[index], user=user)
-                print >> sys.stderr, edge
-                print >> sys.stderr, node, vector_priority[index]
+        # TODO сохранять предыдущие отмеченные результаты(тогда новая таблица нужна)
+        # TODO сделать нормальные урлы
+        #http://127.0.0.1:8000/ahp/comparison/4781b33fa1/
+        number = len(pairwise_list[int(bunches.number)-1]['children'])
+        pairwise_list[int(bunches.number)-1]['children'] = insert_priority(request.POST, pairwise_list[int(bunches.number)-1]['children'], line)
+        # проверка на заполненность всех вершин (кнопка не должна загораться до того как отмечены все и не прошли проверку)
+        if len(request.POST) == number+1 :
+            node_list, Matrix = create_Matrix(pairwise_list[int(bunches.number)-1]['children'])
+            OS, vector_priority, isRecalculation = calculate_weigth(Matrix)
+            if 'auto_revision' in request.POST:
+                return save_and_next(node_list, vector_priority, user, pairwise_list[int(bunches.number)-1]['parent'], bunches)
+            if 'next' in request.POST:
+                if isRecalculation:
+                    for_message = ''
+                    for index, node in enumerate(node_list):
+                        for_message = for_message + 'node: ' +str(node)+'vector_priority: '+str(vector_priority[index])
+                    messages = 'вы сравнили плохо, пересравните или автоматически ваши оценки пересчитаются вот так: '+for_message
+                    action = 'recalculation'
+                    return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages,  'action': action })
+                else:
+                    return save_and_next(node_list, vector_priority, user, pairwise_list[int(bunches.number)-1]['parent'], bunches)
+        else:
+            messages = 'сравните пжлста все критерии'
+            action = 'not all'
+            return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages, action: 'action' })# + message
+
+
+def save_and_next(node_list, vector_priority, user, parent, bunches):
+    for index, node in enumerate(node_list):
+        edge = Edge.objects.get(parent=parent, node=node)
+        weight = Weight.objects.update_or_create(edge=edge, user=user, defaults=dict(weight=vector_priority[index]))
+    if bunches.has_next():
+        user.comparison_form = str(bunches.number)
+        user.save()
+        url = "/ahp/comparison/"+str(user.id_hash)+"?page="+str(bunches.next_page_number())
+        return redirect(url)
+    else:
+        user.comparison_form = 'check'
+        user.save()
         return HttpResponse('спасибки')
-    # куда теперь сохраняем и что вообще делаем Weight??
 
 
-def calculate_weigth(bunch_nodes):
-    SS = [0.0, 0.0, 0.0, 0.58, 0.90, 1.12, 1.24, 1.32, 1.41, 1.45, 1.49, 1.51, 1.48, 1.56, 1.57, 1.59]
+def insert_priority(data, pairwise_nodes, line):
+    for index_node in data:
+        # избавиться от этого {u'next':
+        if index_node != 'next' and index_node != 'auto_revision':
+            #избавиться от первого индекса потому что его можно брять у тек страницы + попробовать присваивать значения кортежами?(но нои не поппорядку)
+            pairwise_nodes[int(index_node)]['priority'] = line[int(data[index_node])]['val']
+            pairwise_nodes[int(index_node)]['value'] = int(data[index_node])
+            #pairwise_list[int(nodes[0])]['children'][int(nodes[1])]['priority'] = line[int(request.POST[index_node])]['val']
+    return pairwise_nodes;
+
+
+def create_Matrix(bunch_nodes):
     node_list = []
     for couple_nodes in bunch_nodes:
         if node_list.count(couple_nodes['left_node']) == 0:
@@ -487,23 +542,51 @@ def calculate_weigth(bunch_nodes):
         r_i = node_list.index(couple_nodes['right_node'])
         Matrix[l_i][r_i] = float(couple_nodes['priority'])
         Matrix[r_i][l_i] = 1.0/float(couple_nodes['priority'])
+    return node_list, Matrix
 
+
+def calculate_weigth(Matrix):
+    SS = [0.0, 0.0, 0.0, 0.58, 0.90, 1.12, 1.24, 1.32, 1.41, 1.45, 1.49, 1.51, 1.48, 1.56, 1.57, 1.59]
     eigenvalues, eigenvectors = numpy.linalg.eig(Matrix)
     lyambd_max = eigenvalues.max()
     index_max = eigenvalues.argmax()
-    eigenvector =  eigenvectors[:,index_max]
+    eigenvector =  eigenvectors[:,index_max].real
     norma = eigenvector.sum()
     vector_priority =  eigenvector/eigenvector.sum()
+    size = len(vector_priority)
     IS = (lyambd_max - size)/(size-1)
     if size > 2 :
         OS = IS/SS[size]
     else:
         OS = 0
-    return OS, vector_priority, node_list
+    if OS > 0.3:
+        isRecalculation = True
+        revision_of_judgments(Matrix, vector_priority)
+    else:
+        try:
+            isRecalculation
+        except NameError:
+            isRecalculation = False
+    return OS, vector_priority, isRecalculation
+
+
+def revision_of_judgments(Matrix, vector_priority):
+    #разобраться и сделать со строками
+    size = len(vector_priority)
+    Matrix_W =  numpy.ones((size, size))
+    for i in range(0, size):
+        for j in range(0, size):
+            Matrix_W[i][j] = float(vector_priority[i]/vector_priority[j])
+            Matrix_W[j][i] = float(vector_priority[j]/vector_priority[i])
+    Matrix_delta = numpy.zeros((size, size))
+    Matrix_delta = numpy.absolute(Matrix - Matrix_W)
+    i,j = numpy.unravel_index(Matrix_delta.argmax(), Matrix_delta.shape)
+    Matrix[i][j] = float(vector_priority[i]/vector_priority[j])
+    calculate_weigth(Matrix)
 
 
 def data_for_comparison(group):
-    group_nodes_ids = GroupNodes.objects.values_list('node', flat=True).filter(type='for comparison', group=group)
+    group_nodes_ids = GroupNodes.objects.values_list('node', flat=True).filter(type='for comparison form', group=group)
     ids = set(group_nodes_ids) | set('1')
     edges = Edge.objects.all()
     levels_queryset = Level.objects.order_by('order')
@@ -511,33 +594,92 @@ def data_for_comparison(group):
     alt_level = levels.pop(1)
     levels.append(alt_level)
     pairwise_list = []
-    parent_list = []
     for level in levels:
         nodes = LevelNodes.objects.filter(node__in=set(ids), level=level)
         for node in nodes:
             children_nodes = Edge.objects.filter(parent=node.node, node__in=set(ids))
-            if len(children_nodes)>0:
-                parent_list.append(node)
-                #вот тут добавить парента и функция ниже возвращает детей и тут же создаем объект
-                pairwise_generation(children_nodes, node, pairwise_list)
-    return pairwise_list, parent_list
+            if len(children_nodes)>1:
+                pairwise_bunch = {}
+                pairwise_bunch['parent'] = node.node
+                pairwise_bunch['children'] = pairwise_generation(children_nodes)
+                pairwise_list.append(pairwise_bunch)
+    return pairwise_list
 
 
 
-def pairwise_generation(nodes, parent, pairwise_list):
+def pairwise_generation(nodes):
+    nodes_list = []
     include_nodes = []
     for node_left in nodes:
-        #print sys.stderr,'node_left  ', node_left
         include_nodes.append(node_left)
-        #print sys.stderr,'include_nodes  ', include_nodes
-        #print sys.stderr,'set(nodes).difference(include_nodes)  ', set(nodes).difference(include_nodes)
         for node_right in set(nodes).difference(include_nodes):
             pairwise_obj = {}
-            pairwise_obj['parent'] = parent.node
             pairwise_obj['left_node'] = node_left.node
             pairwise_obj['right_node']= node_right.node
+            pairwise_obj['priority'] = ''
+            pairwise_obj['value'] = ''
+            nodes_list.append(pairwise_obj)
+    return nodes_list
 
-            pairwise_list.append(pairwise_obj)
 
+def global_priority_calculation(request):
+    #1. обработка request
+    """
+    group_id = 66
+    group = Group.objects.get(pk=group_id)
+    group_nodes = GroupNodes.objects.filter(group=group)
+    """
+    #или передавать сразу
+    # groups, users
+    #если мы передаем пользователей, значит надо брать готовый список, но пока мы этого не делаем, потом просто будем брать список из запроса
+    #хотя если пользователи. то они из одной группы обычно, так что смысла мало(напишу потом если понадобится)
+    for group in groups:
+        group_nodes = GroupNodes.objects.filter(group=group)
+        group_users = User.objects.filter(group=group)
+        nodes_list.extend(group_nodes)#склейка массивов
+        users_list.extend(group_users)#склейка массивов
+    nodes = list(set(nodes_list))
+    users = list(set(users_list))#хотя зачем если они и так не повторяются?
+
+#может передавать группы, чтобы в будущем учитывать вес каждой??
+    global_priority = loop_tree(nodes, users, groups)
+
+    print >> sys.stderr,'global_priority  ',  global_priority
+    return HttpResponse('')
+
+#везде передавать users или group
+#по group формируем вершины, по users - веса
+#доделать это и начать засовывать ангулар
+#
+def loop_tree(nodes, users, groups):
+    level = Level.objects.get(name='alternatives')
+    alternatives = Edge.objects.filter(level=level, node__in=set(nodes.values_list('node', flat=True)))
+    Matrix = create_weigth_Matrix(alternatives, users)
+    while len(set(edges.values_list('parent', flat=True)))>1:
+        groups_edges = edges.filter(node__in=set(nodes.values_list('node', flat=True)))
+        parent_edges = Edge.objects.filter(node__in=set(groups_edges.values_list('parent', flat=True)))# +groupnodes
+        parent_Matrix = create_weigth_Matrix(parent_edges, users)
+        new_Matrix = numpy.dot(Matrix, parent_Matrix)
+        Matrix = new_Matrix
+        edges = parent_edges
+    return Matrix
+
+
+def create_weigth_Matrix(edges, users):
+    nodes = list(set(edges.values_list('node', flat=True)))
+    parents = list(set(edges.values_list('parent', flat=True)))
+    print >> sys.stderr,'nodes',  nodes
+    print >> sys.stderr,'parents', parents
+    print >> sys.stderr,'     '
+
+    Matrix =  numpy.zeros((len(nodes), len(parents)), "f")
+    for index_node, node in enumerate(nodes):
+        for index_parent, parent in enumerate(parents):
+            edge = edges.get(node=node,parent=parent)
+            for user in users:
+            #for users in user =>
+                Matrix[index_node][index_parent] = Weight.objects.get(edge=edge, user=user).weight#^в степени доверия к пользователю(в зависимости от группы или противоречивости)
+            #Matrix[index_node][index_parent] берем корень из этого всего равный колву пользователей (len(users))
+    return Matrix
 
 
