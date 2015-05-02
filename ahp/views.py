@@ -16,6 +16,7 @@ from django.db.models import F
 from django.db.models import Max
 from django.template import RequestContext, loader
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.urlresolvers import reverse
 
 from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes, Question, UserInfo
 
@@ -388,14 +389,14 @@ def email(request):
     user.id_hash = hash_id(user_id)
     if act_type == 'send_email_hierarchy':
         header = 'Исследование1'
-        url = 'http://127.0.0.1:8000/ahp/hierarchy/' + user.id_hash
+        url = request.build_absolute_uri(reverse("ahp.views.form_for_participant", kwargs={'hash_user_id': user.id_hash}))
         text = data['text'] + '    ' + url
         email = user.email
         send_email(header, text, email)
         user.hierarchy_form = 'email'
     if act_type == 'send_email_comparison':
         header = 'Исследование2'
-        url = 'http://127.0.0.1:8000/ahp/comparison/' + user.id_hash
+        url = request.build_absolute_uri(reverse("ahp.views.form_for_comparison", kwargs={'hash_user_id': user.id_hash}))
         text = data['text'] + '    ' + url
         email = user.email
         send_email(header, text, email)
@@ -414,6 +415,7 @@ def hash_id(id):
 def send_email(header, text, email):
     try:
         # заголовок,  текст,  адрес рассылки,  адрес получателя,  и непоятный параметр
+        print >> sys.stderr, 'TRY SEND EMAIL TO  '+'email: '+email+'  WITH TEXT  '+text
         send_mail(header, text, 'qjkzzz@gmail.com', [email], fail_silently=False)
     except BadHeaderError:
         return HttpResponse('Invalid header found.')
