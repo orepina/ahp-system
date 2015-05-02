@@ -538,12 +538,13 @@ function hierarchyController( $scope, ajaxFactory, updateFactory ) {
 
 }
 
-function dontknowController( $scope, ajaxFactory, updateFactory ) {
+function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
 
     $scope.init = function() {
         $scope.act_type = '';
         $scope.group_hash = {};
         $scope.user_list = [];
+        $scope.chosen_group_list = [];
         $scope.update();
     };
 

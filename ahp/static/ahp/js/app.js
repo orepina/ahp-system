@@ -16,6 +16,6 @@
         .controller('usersController', usersController)
         .controller('groupHierarchyVotesController', groupHierarchyVotesController)
         .controller('tabController', tabController)
-        .controller('dontknowController', dontknowController)
+        .controller('globalPriorityController', globalPriorityController)
         .directive ('popup', popup)
 })();

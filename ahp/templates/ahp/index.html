@@ -240,9 +240,11 @@
 
 
 <div ng-show="settab=='4'">
-    <div ng-controller="dontknowController" ng-init="init()">
+    <div ng-controller="globalPriorityController" ng-init="init()">
+        <input type="checkbox">
+        Все
         <div ng-repeat="group in group_hash">
-            <input type="checkbox" checklist-model="group_list" checklist-value="group">
+            <input type="checkbox" checklist-model="chosen_group_list" checklist-value="group">
             {{group.name}}
         </div>
     </div>

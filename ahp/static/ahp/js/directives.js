@@ -16,7 +16,6 @@ function popup(ajaxFactory){
                 else {
                     $scope.init();
                 }
-
             };
 
             //разные в зависимости от типа - уровень или вершина
