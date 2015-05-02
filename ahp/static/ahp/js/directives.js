@@ -7,7 +7,7 @@ function popup(ajaxFactory){
     return {
         restrict: 'E',
         scope: false,
-        templateUrl: 'popup.html',
+        templateUrl: 'popup',
         controller: function($scope) {
             $scope.closePopup = function() {
                 if ($scope.act_type=='error'){

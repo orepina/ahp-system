@@ -20,11 +20,11 @@ urlpatterns = patterns('',
     url(r'^chosen_group_nodes_for_comparison/$', views.chosen_group_nodes_for_comparison, name='chosen_group_nodes_for_comparison'),
 
     url(r'^$', views.main, name='main'),
-    url(r'^popup.html/$', views.popup, name='popup'),
+    url(r'^popup/$', views.popup, name='popup'),
 
     url(r'^global_priority/$', views.global_priority_calculation, name='global_priority_calculation'),
 
     url(r'^hierarchy/(?P<hash_user_id>\w+)/$', views.form_for_participant, name='form_for_participant'),
     url(r'^comparison/(?P<hash_user_id>\w+)/$', views.form_for_comparison, name='form_for_comparison'),
-
 )
+

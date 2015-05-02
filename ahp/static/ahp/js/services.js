@@ -13,7 +13,7 @@ function ajaxFactory( $http ) {
         postRequest : function( entity_type, data ) {
             return $http ({
                     method: 'POST',
-                    url: 'http://127.0.0.1:8000/ahp/' + entity_type +'/',// +act_type ,   //'http://127.0.0.1:8000/ahp/'
+                    url: entity_type +'/',// +act_type ,   //'http://127.0.0.1:8000/ahp/'
                     data: data
                 })
         },
@@ -21,7 +21,7 @@ function ajaxFactory( $http ) {
         getRequest : function( method, parameters ) {
             return $http ({
                     method: 'GET',
-                    url: 'http://127.0.0.1:8000/ahp/' + method + parameters +'/'
+                    url: method + parameters +'/'
                 })
         }
     }
