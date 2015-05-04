@@ -35,10 +35,12 @@ def main(request):
     return render(request, 'ahp/index.html')
 
 
+def login(request):
+    return HttpResponse('незалогинен')
+
+
 def popup(request):
     return render(request, 'ahp/popup.html')
-
-
 
 
 # +пользователь может добавлять новые критерии?
