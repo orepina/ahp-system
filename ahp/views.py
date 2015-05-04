@@ -18,7 +18,7 @@ from django.template import RequestContext, loader
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User as authUser
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, views
 from django.contrib.auth.decorators import login_required, user_passes_test
 
 from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes, Question, UserInfo
@@ -33,6 +33,10 @@ def main(request):
     print >> sys.stderr, 'request.user', request.user
     return render(request, 'ahp/index.html')
 
+def login(request):
+    template_response = views.login(request)
+    # Do something with `template_response`
+    return template_response
 
 def popup(request):
     return render(request, 'ahp/popup.html')
