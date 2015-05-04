@@ -1,7 +1,7 @@
 {% load staticfiles %}
 <link rel="stylesheet" type="text/css" href="{% static 'ahp/style.css' %}" />
 <link rel="stylesheet" href="{% static 'ahp/bootstrap.css' %}" />
-
+{% csrf_token %}
 {% for  pairwise_bunch in bunches %}
 <div class="container">
     <div class="row">
