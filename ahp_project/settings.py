@@ -80,6 +80,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
-from local_settings import *
+EMAIL_HOST_USER = 'analytichierarchysystem@gmail.com'
+EMAIL_HOST_PASSWORD = 'ghbphfrb'
 
 LOGIN_URL = '/ahp/login/'
