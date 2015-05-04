@@ -24,7 +24,7 @@ urlpatterns = patterns('',
     url(r'^$', views.main, name='main'),
     url(r'^popup/$', views.popup, name='popup'),
 
-    url(r'^login/$', 'django.contrib.auth.views.login'),
+
     url(r'^global_priority/$', views.global_priority_calculation, name='global_priority_calculation'),
 
     url(r'^hierarchy/(?P<hash_user_id>\w+)/$', views.form_for_participant, name='form_for_participant'),
