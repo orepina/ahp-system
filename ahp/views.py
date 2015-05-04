@@ -38,20 +38,7 @@ def main(request):
 def popup(request):
     return render(request, 'ahp/popup.html')
 
-def login(request):
-    #user = authUser.objects.create_user('hhhhhhh', 'lennon@thebeatles.com', 'secret')
-    user = authenticate(username='john', password='secret')
-    if user is not None:
-        # the password verified for the user
-        if user.is_active:
-             print >> sys.stderr, "User is valid, active and authenticated"
-        else:
-             print >> sys.stderr, "The password is valid, but the account has been disabled!"
-    else:
-        # the authentication system was unable to verify the username and password
-         print >> sys.stderr, "The username and password were incorrect."
-    logout(user)
-    return HttpResponse('')
+
 
 
 # +пользователь может добавлять новые критерии?
