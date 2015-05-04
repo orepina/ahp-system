@@ -545,7 +545,16 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
         $scope.group_hash = {};
         $scope.user_list = [];
         $scope.chosen_group_list = [];
+        $scope.all = false
         $scope.update();
+    };
+
+    $scope.selectAll = function() {
+        $scope.chosen_group_list = []
+        for (group in $scope.group_hash){
+            $scope.chosen_group_list.push(group)
+        }
+        console.log($scope.chosen_group_list)
     };
 
     $scope.update = function() {

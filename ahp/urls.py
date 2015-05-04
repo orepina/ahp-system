@@ -2,6 +2,8 @@ from django.conf.urls import patterns, url
 
 from ahp import views
 
+from django.contrib.auth.decorators import login_required
+
 urlpatterns = patterns('',
     url(r'^common_hierarchy/$', views.common_hierarchy, name='common_hierarchy'),
     url(r'^level/$', views.level, name='level'),
@@ -21,6 +23,7 @@ urlpatterns = patterns('',
 
     url(r'^$', views.main, name='main'),
     url(r'^popup/$', views.popup, name='popup'),
+    url(r'^login/$', views.login, name='login'),
 
     url(r'^global_priority/$', views.global_priority_calculation, name='global_priority_calculation'),
 

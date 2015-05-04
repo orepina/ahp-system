@@ -1,13 +1,3 @@
-"""
-Django settings for ahp_project project.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/1.7/topics/settings/
-
-For the full list of settings and their values, see
-https://docs.djangoproject.com/en/1.7/ref/settings/
-"""
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -43,7 +33,7 @@ INSTALLED_APPS = (
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-#    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -52,35 +42,6 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.common.CommonMiddleware',
 )
 
-
-#CORS_ORIGIN_ALLOW_ALL = True
-CORS_ORIGIN_WHITELIST = (
-        'localhost:63343',
-        'localhost:63342',
-)
-CORS_ORIGIN_REGEX_WHITELIST = ()
-CORS_URLS_REGEX = '^.*$'
-CORS_ALLOW_METHODS = (
-        'GET',
-        'POST',
-        'PUT',
-        'PATCH',
-        'DELETE',
-        'OPTIONS'
-)
-CORS_ALLOW_HEADERS = (
-        'x-requested-with',
-        'content-type',
-        'accept',
-        'origin',
-        'authorization',
-        'x-csrftoken',
-        'csrftoken'
-)
-CORS_EXPOSE_HEADERS = ()
-CORS_PREFLIGHT_MAX_AGE = 86400
-CORS_ALLOW_CREDENTIALS = False
-CORS_REPLACE_HTTPS_REFERER = False
 
 ROOT_URLCONF = 'ahp_project.urls'
 
@@ -122,3 +83,5 @@ EMAIL_HOST_USER = 'qjkzzz@gmail.com'
 EMAIL_HOST_PASSWORD = 'ghbphfrb'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
+
+LOGIN_URL = '/login/'

@@ -241,8 +241,8 @@
 
 <div ng-show="settab=='4'">
     <div ng-controller="globalPriorityController" ng-init="init()">
-        <input type="checkbox">
-        Все
+        <input type="checkbox" ng-change="selectAll()" ng-model="all">
+        Все(не работает)
         <div ng-repeat="group in group_hash">
             <input type="checkbox" checklist-model="chosen_group_list" checklist-value="group">
             {{group.name}}

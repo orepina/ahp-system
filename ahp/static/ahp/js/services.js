@@ -31,7 +31,6 @@ function updateFactory() {
     return {
 
         //разобраться с кучей одинаковых методов
-
         updateNodeHash: function(data) {
             var temp = JSON.parse(data).concat(),
                 node_hash = {};

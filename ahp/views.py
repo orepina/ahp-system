@@ -17,6 +17,9 @@ from django.db.models import Max
 from django.template import RequestContext, loader
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.urlresolvers import reverse
+from django.contrib.auth.models import User as authUser
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 
 from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes, Question, UserInfo
 
@@ -24,31 +27,29 @@ from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, 
 #TODO везде учесть проблему повторения, отсутсвия, обработка ошибок и все такое
 #TODO класс для форм, может класс связь с моделями
 
+@login_required
 def main(request):
+    print >> sys.stderr, 'request.user', request.user
     return render(request, 'ahp/index.html')
 
 
 def popup(request):
     return render(request, 'ahp/popup.html')
 
-def index(request):
-    #bu = json.loads(request.body)
-    #print >> sys.stderr, bu['adjacency_list']
-    #проверка на непустой запрос, создание группы в лругом месте, здесь вытаскиваем готовую
-    #fk_group = Group.objects.create(info=bu['info'])
-    #придумать вот это дело - str(user.id) ( откуда id брать)
-    #hash_str = hashlib.sha1(str(datetime.datetime.now())).hexdigest()
-    #hash = hash_str[-10:]
-    #user = User.objects.create(email=bu['email'], info=bu['info'], group=fk_group, id_hash=hash)
-    #print >> sys.stderr, user.email
-    #try:
-    #    send_mail('Olya', 'Privet', 'qjkzzz@gmail.com', ['enot444@yandex.ru'], fail_silently=False)
-    #except BadHeaderError:
-    #        return HttpResponse('Invalid header found.')
-    edges = serializers.serialize('json', Edge.objects.all())
-    #return JsonResponse(edges)
-    print >> sys.stderr, edges
-    return HttpResponse(json.dumps(edges), content_type="application/json")
+def login(request):
+    #user = authUser.objects.create_user('hhhhhhh', 'lennon@thebeatles.com', 'secret')
+    user = authenticate(username='john', password='secret')
+    if user is not None:
+        # the password verified for the user
+        if user.is_active:
+             print >> sys.stderr, "User is valid, active and authenticated"
+        else:
+             print >> sys.stderr, "The password is valid, but the account has been disabled!"
+    else:
+        # the authentication system was unable to verify the username and password
+         print >> sys.stderr, "The username and password were incorrect."
+    logout(user)
+    return HttpResponse('')
 
 
 # +пользователь может добавлять новые критерии?
@@ -119,8 +120,7 @@ def group_has_node(group, node):
             return True
     return False
 
-
-#get node, level, edge
+@login_required(login_url='/auth/')
 def common_hierarchy(request):
     nodes = serializers.serialize('json', Node.objects.all())
     edges = serializers.serialize('json', Edge.objects.all())
