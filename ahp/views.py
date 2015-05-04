@@ -29,7 +29,7 @@ from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, 
 
 #/login/?next=/ahp/#
 
-@login_required(login_url='/login/')
+@login_required(login_url='/ahp/login/')
 def main(request):
     print >> sys.stderr, 'request.user', request.user
     return render(request, 'ahp/index.html')
