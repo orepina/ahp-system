@@ -28,9 +28,7 @@ from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, 
 #TODO класс для форм, может класс связь с моделями
 
 
-@login_required
 def main(request):
-    print >> sys.stderr, 'request.user', request.user
     return render(request, 'ahp/index.html')
 
 def login(request):

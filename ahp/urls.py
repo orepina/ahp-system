@@ -21,7 +21,7 @@ urlpatterns = patterns('',
     url(r'^email/$', views.email, name='email'),
     url(r'^chosen_group_nodes_for_comparison/$', views.chosen_group_nodes_for_comparison, name='chosen_group_nodes_for_comparison'),
 
-    url(r'^$', views.main, name='main'),
+    url(r'^$', login_required(views.main), name='main'),
     url(r'^popup/$', views.popup, name='popup'),
 
     url(r'^login/$', 'django.contrib.auth.views.login', {'template_name': 'ahp/login.html'}),
