@@ -19,7 +19,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User as authUser
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 
 from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, Weight, Level, LevelNodes, Question, UserInfo
 
@@ -27,16 +27,11 @@ from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, 
 #TODO везде учесть проблему повторения, отсутсвия, обработка ошибок и все такое
 #TODO класс для форм, может класс связь с моделями
 
-#/login/?next=/ahp/#
 
-@login_required(login_url='/ahp/login/')
+@login_required
 def main(request):
     print >> sys.stderr, 'request.user', request.user
     return render(request, 'ahp/index.html')
-
-
-def login(request):
-    return HttpResponse('незалогинен')
 
 
 def popup(request):

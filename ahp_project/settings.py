@@ -84,3 +84,4 @@ EMAIL_HOST_PASSWORD = 'ghbphfrb'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
+LOGIN_URL = '/ahp/login/'
