@@ -27,7 +27,9 @@ from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, 
 #TODO везде учесть проблему повторения, отсутсвия, обработка ошибок и все такое
 #TODO класс для форм, может класс связь с моделями
 
-@login_required
+#/login/?next=/ahp/#
+
+@login_required(login_url='/login/')
 def main(request):
     print >> sys.stderr, 'request.user', request.user
     return render(request, 'ahp/index.html')
