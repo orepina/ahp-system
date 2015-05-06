@@ -544,17 +544,23 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
         $scope.act_type = '';
         $scope.group_hash = {};
         $scope.user_list = [];
-        $scope.chosen_group_list = [];
+        $scope.checked_group_list = [];
         $scope.all = false
+        $scope.node_hash = {};
+        $scope.level_nodes_list = {};
+        $scope.level_order = [];
+        $scope.result = {};
+        $scope.group_priority = {};
         $scope.update();
+
     };
 
     $scope.selectAll = function() {
-        $scope.chosen_group_list = []
+        $scope.checked_group_list = []
         for (group in $scope.group_hash){
-            $scope.chosen_group_list.push(group)
+            $scope.checked_group_list.push(group)
         }
-        console.log($scope.chosen_group_list)
+        console.log($scope.checked_group_list)
     };
 
     $scope.update = function() {
@@ -566,7 +572,22 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
             .success(function(data, status, headers, config) {
                 $scope.user_list = updateFactory.updateUserList(data.users);
             }).error(function(data, status, headers, config){})
+        ajaxFactory.getRequest('common_hierarchy', '', '')
+            .success(function(data, status, headers, config) {
+                $scope.node_hash = updateFactory.updateNodeHash(data.nodes);
+                //$scope.level_hash = updateFactory.updateLevelHash(data.levels);
+                $scope.level_order = updateFactory.updateLevelOrder(data.levels);
+                $scope.level_nodes_list = updateFactory.updateLevelList(data.level_nodes);
+            })
+            .error(function(data, status, headers, config){});
     };
+
+    $scope.calculate = function() {
+    ajaxFactory.postRequest('global_priority', $scope.checked_group_list)
+            .success(function(data, status, headers, config) {
+                    $scope.result = data.result
+            }).error(function(data, status, headers, config){});
+    }
 
 
 }

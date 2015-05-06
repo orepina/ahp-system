@@ -23,7 +23,8 @@ class User(models.Model):
     group = models.ForeignKey(Group)
     hierarchy_form = models.CharField(max_length=15, default='')
     comparison_form = models.CharField(max_length=15, default='')
-    confidence = models.IntegerField()
+    confidence1 = models.IntegerField()
+    confidence2 = models.IntegerField()
     def __unicode__(self):
         return self.name
 

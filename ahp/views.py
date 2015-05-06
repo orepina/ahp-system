@@ -49,7 +49,7 @@ def form_for_participant(request, hash_user_id):
     user_group = user.group
     if request.method == 'GET':
         if user.hierarchy_form == 'check':
-            HttpResponse('ты уже заполнял')
+            return HttpResponse('ты уже заполнял')
         else:
             question_list = Question.objects.filter(group=user_group)
             levels = Level.objects.order_by('order')
@@ -108,7 +108,7 @@ def group_has_node(group, node):
             return True
     return False
 
-@login_required(login_url='/auth/')
+
 def common_hierarchy(request):
     nodes = serializers.serialize('json', Node.objects.all())
     edges = serializers.serialize('json', Edge.objects.all())
@@ -428,7 +428,7 @@ def chosen_group_nodes_for_comparison(request):
 def form_for_comparison(request, hash_user_id):
     #hash_user_id = '809ffca6e3'
     #TODO get or 404
-    #  TODO - делать ли кнопку назад? (если да, то в GET считываем из БД, тогда в БД добавить поле с view и наверное даже новую таблицу(потому что пары формируются при обращении, в БД только вектор)
+    #TODO - делать ли кнопку назад? (если да, то в GET считываем из БД, тогда в БД добавить поле с view и наверное даже новую таблицу(потому что пары формируются при обращении, в БД только вектор)
     line = [{'val':9, 'view':9},
             {'val':8, 'view':8},
             {'val':7, 'view':7},
@@ -451,7 +451,7 @@ def form_for_comparison(request, hash_user_id):
     user_group = user.group
     pairwise_list = data_for_comparison(user_group)
 
-    paginator = Paginator(pairwise_list, 1) # Show 25 contacts per page
+    paginator = Paginator(pairwise_list, 1)
     page = request.GET.get('page')
     try:
         bunches = paginator.page(page)
@@ -460,14 +460,15 @@ def form_for_comparison(request, hash_user_id):
     except EmptyPage:
         bunches = paginator.page(paginator.num_pages)
     if request.method == 'GET':
-        messages = ''
-        action = ''
-        return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages, action: 'action' })
+        if user.comparison_form == 'check':
+            return HttpResponse('ты уже заполнял')
+        else:
+            messages = ''
+            action = ''
+            return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages, action: 'action' })
 
     if request.method == 'POST':
         # TODO сохранять предыдущие отмеченные результаты(тогда новая таблица нужна)
-        # TODO сделать нормальные урлы
-        #http://127.0.0.1:8000/ahp/comparison/4781b33fa1/
         number = len(pairwise_list[int(bunches.number)-1]['children'])
         pairwise_list[int(bunches.number)-1]['children'] = insert_priority(request.POST, pairwise_list[int(bunches.number)-1]['children'], line)
         # проверка на заполненность всех вершин (кнопка не должна загораться до того как отмечены все и не прошли проверку)
@@ -475,6 +476,7 @@ def form_for_comparison(request, hash_user_id):
             node_list, Matrix = create_Matrix(pairwise_list[int(bunches.number)-1]['children'])
             OS, vector_priority, isRecalculation = calculate_weigth(Matrix)
             if 'auto_revision' in request.POST:
+                #user.confidence = user.confidence - 1
                 return save_and_next(node_list, vector_priority, user, pairwise_list[int(bunches.number)-1]['parent'], bunches)
             if 'next' in request.POST:
                 if isRecalculation:
@@ -541,6 +543,7 @@ def calculate_weigth(Matrix):
     lyambd_max = eigenvalues.max()
     index_max = eigenvalues.argmax()
     eigenvector =  eigenvectors[:,index_max].real
+    #вычисление суммы другое(сумма квадратов под корнем)
     norma = eigenvector.sum()
     vector_priority =  eigenvector/eigenvector.sum()
     size = len(vector_priority)
@@ -613,63 +616,71 @@ def pairwise_generation(nodes):
 
 
 def global_priority_calculation(request):
-    #1. обработка request
-    """
-    group_id = 66
-    group = Group.objects.get(pk=group_id)
-    group_nodes = GroupNodes.objects.filter(group=group)
-    """
-    #или передавать сразу
-    # groups, users
+    groups = json.loads(request.body)
     #если мы передаем пользователей, значит надо брать готовый список, но пока мы этого не делаем, потом просто будем брать список из запроса
     #хотя если пользователи. то они из одной группы обычно, так что смысла мало(напишу потом если понадобится)
+    nodes_list = []
+    users = []
     for group in groups:
-        group_nodes = GroupNodes.objects.filter(group=group)
-        group_users = User.objects.filter(group=group)
-        nodes_list.extend(group_nodes)#склейка массивов
-        users_list.extend(group_users)#склейка массивов
+        group_nodes = GroupNodes.objects.filter(group=group['id'])
+        group_users = User.objects.filter(group=group['id'], comparison_form='check')
+        for group_user in group_users:
+            users.append({id: group_user, group_priority: group['priority']})
+        nodes_list.extend(group_nodes.values_list('node', flat=True))
     nodes = list(set(nodes_list))
-    users = list(set(users_list))#хотя зачем если они и так не повторяются?
 
-#может передавать группы, чтобы в будущем учитывать вес каждой??
-    global_priority = loop_tree(nodes, users, groups)
-
-    print >> sys.stderr,'global_priority  ',  global_priority
-    return HttpResponse('')
+    if len(users)>0:
+        result = loop_tree(nodes, users, groups)
+        return HttpResponse(json.dumps({
+            'result': result,
+        }), content_type="application/json")
+    else:
+        return HttpResponse('ошибка')
 
 #везде передавать users или group
 #по group формируем вершины, по users - веса
 #доделать это и начать засовывать ангулар
-#
-def loop_tree(nodes, users, groups):
+
+def loop_tree(nodes_list, users_list, groups_list):
     level = Level.objects.get(name='alternatives')
-    alternatives = Edge.objects.filter(level=level, node__in=set(nodes.values_list('node', flat=True)))
-    Matrix = create_weigth_Matrix(alternatives, users)
+    alternatives = Edge.objects.filter(level=level, node__in=set(nodes_list))
+    edges = alternatives
+    Matrix = create_weigth_Matrix(edges, users_list)
     while len(set(edges.values_list('parent', flat=True)))>1:
-        groups_edges = edges.filter(node__in=set(nodes.values_list('node', flat=True)))
-        parent_edges = Edge.objects.filter(node__in=set(groups_edges.values_list('parent', flat=True)))# +groupnodes
-        parent_Matrix = create_weigth_Matrix(parent_edges, users)
+        groups_edges = edges.filter(node__in=set(nodes_list))
+        parent_edges = Edge.objects.filter(node__in=set(groups_edges.values_list('parent', flat=True)))
+        parent_Matrix = create_weigth_Matrix(parent_edges, users_list)
         new_Matrix = numpy.dot(Matrix, parent_Matrix)
         Matrix = new_Matrix
         edges = parent_edges
-    return Matrix
+    result = {}
+    alternatives = list(set(alternatives.values_list('node', flat=True)))
+    for index, alternative in enumerate(alternatives):
+        result[alternative] = Matrix.item((index))
+    return result
 
 
 def create_weigth_Matrix(edges, users):
     nodes = list(set(edges.values_list('node', flat=True)))
     parents = list(set(edges.values_list('parent', flat=True)))
-    print >> sys.stderr,'nodes',  nodes
-    print >> sys.stderr,'parents', parents
-    print >> sys.stderr,'     '
-
-    Matrix =  numpy.zeros((len(nodes), len(parents)), "f")
+    Matrix =  numpy.ones((len(nodes), len(parents)), "f")
     for index_node, node in enumerate(nodes):
         for index_parent, parent in enumerate(parents):
             edge = edges.get(node=node,parent=parent)
             for user in users:
-            #for users in user =>
-                Matrix[index_node][index_parent] = Weight.objects.get(edge=edge, user=user).weight#^в степени доверия к пользователю(в зависимости от группы или противоречивости)
-            #Matrix[index_node][index_parent] берем корень из этого всего равный колву пользователей (len(users))
+                try:
+                    weight = pow(Weight.objects.get(edge=edge, user=user['id']).weight, (user['group_priority']/len(users)))
+                except Weight.DoesNotExist:
+                    #weight = 1.0/len(nodes)
+                    weight = 0
+                #print >> sys.stderr,'[index_node][index_parent]    ', index_node, '  ',index_parent
+                #print >> sys.stderr,' weight    ', weight
+                Matrix[index_node][index_parent] = Matrix[index_node][index_parent]* weight
+            #Matrix[index_node][index_parent] = pow(Matrix[index_node][index_parent], (1.0/len(users)))
+    #тут тоже нормализую вектор неправильно
+    vect_sum = list(Matrix.sum(axis=0)) #numpy.linalg.norm(Matrix, axis=0)
+    for i, val in enumerate(vect_sum):
+        Matrix[:, i] = Matrix[:, i] / val
     return Matrix
 
 

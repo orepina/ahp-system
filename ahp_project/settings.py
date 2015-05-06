@@ -83,6 +83,4 @@ EMAIL_HOST_USER = 'analytichierarchysystem@gmail.com'
 EMAIL_HOST_PASSWORD = 'ghbphfrb'
 
 
-
-
 LOGIN_URL = '/ahp/login/'

@@ -241,12 +241,27 @@
 
 <div ng-show="settab=='4'">
     <div ng-controller="globalPriorityController" ng-init="init()">
-        <input type="checkbox" ng-change="selectAll()" ng-model="all">
-        Все(не работает)
-        <div ng-repeat="group in group_hash">
-            <input type="checkbox" checklist-model="chosen_group_list" checklist-value="group">
-            {{group.name}}
+
+        <div class="col-md-4">
+            <input type="checkbox" ng-change="selectAll()" ng-model="all">
+            Все(не работает)
+            <div ng-repeat="(group_key, group) in group_hash">
+                <input type="checkbox" checklist-model="checked_group_list" checklist-value="group_key">
+                {{group.name}}
+                <div ng-show="group.count.for_comparison>0">можно голосовать</div>
+            </div>
         </div>
+        <div class="col-md-8">
+            <div class="h3">Альтернативы:</div>
+
+            <div class="list-group">
+                <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" class="list-group-item">
+                    {{node_hash[node].name}}
+                    {{result[node]}}
+                </div>
+            </div>
+        </div>
+        <button ng-click="calculate()">Расчитать</button>
     </div>
 </div>
 
