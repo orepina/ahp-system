@@ -4,22 +4,40 @@
 {% csrf_token %}
 {% for  pairwise_bunch in bunches %}
 <div class="container">
-    <div class="row">
-    <div class="col-md-8 col-md-offset-2">
+<div class="row">
+<div class="col-md-10 col-md-offset-1">
+    <br>
+    <div class="jumbotron">
     <form action="" method="post">
-    <!--    {% csrf_token %}-->
-        <div>
+        {% ifequal  pairwise_bunch 'help' %}
+            <div>
+                <h2>Здравствуйте, {{user.name}}!</h2>
+                Это второй этап голосования по проблеме <strong>{{goal}}</strong>.<br>
+                На данном этапе предлагается сравнивать объекты  попарно по отношению к их воздействию на общую для них характеристику.<br><br>
+                Для этого используется шкала от 1 до 9, которая трактуется следующим образом:<br><br>
+                <div class="list-group">
+                <div class="list-group-item"><span class="label label-default">1</span>	 одинаковая значимость, два действия вносят одинаковый вклад в достижение цели</div>
+                <div class="list-group-item"><span class="label label-primary">3</span>	 некоторое преобладание значимости одного показателя фактора перед другим, незначительное предпочтение</div>
+                <div class="list-group-item"><span class="label label-success">5</span>	 существенное предпочтение или сильная значимость</div>
+                <div class="list-group-item"><span class="label label-warning">7</span>	 очень сильная значимость или очевидное предпочтение</div>
+                <div class="list-group-item"><span class="label label-danger">9</span>	 абсолютное предпочтение</div>
+                <div class="list-group-item"><span class="label label-default">2, 4, 6, 8</span>  промежуточные значения между соседними значениями шкалы; ситуация, когда необходимо компромиссное решение</div>
+                </div>
+            </div>
+        {% endifequal %}
+
             <div class="pairwise_container">
-            {{ pairwise_bunch.parent }}
-
+            <h2>{{ pairwise_bunch.parent }}</h2>
                 {% for  pairwise_obj in pairwise_bunch.children %}
-                <div>
+                <div class="obj_container">
+                    <!--
+                    <div class="left"></div>
+                    <div class="right"></div>
+                    -->
                     <div class="pairwise_nodes">
-                        {{pairwise_obj.value}}
-                        <span class="pairwise_left_node">{{ pairwise_obj.left_node }}</span>
-                        <span class="pairwise_right_node">{{ pairwise_obj.right_node }}</span>
+                        <span class="pairwise_left_node"><h3>{{ pairwise_obj.left_node }}</h3></span>
+                        <span class="pairwise_right_node"><h3>{{ pairwise_obj.right_node }}</h3></span>
                     </div>
-
                     <div class="pairwise_line">
                     {% for obj in line %}
                         <input {% ifequal  pairwise_obj.value forloop.counter0 %} checked="checked" {% endifequal %} id={{forloop.parentloop.parentloop.counter0}}_{{forloop.parentloop.counter0}}_{{forloop.counter0}} type='radio' name={{forloop.parentloop.counter0}} value={{forloop.counter0}}>
@@ -29,36 +47,36 @@
                 </div>
                 {% endfor %}
             </div>
-        </div>
-
-        <div>
-        {{messages}}
-        </div>
+        {% if messages %}
+        <div class="alert alert-warning" role="alert">
+            {{messages|linebreaksbr }}</div>
+        {% endif %}
 
 
         <div class="pagination">
             <span class="step-links">
-
                 <span class="current">
                     Page {{ bunches.number }} of {{ bunches.paginator.num_pages }}.
                 </span>
-                {% if bunches.has_next %}
-                    <input type="submit" value="Дальше" name="next">
-                    {% ifequal action "recalculation" %}
-                        <input type="submit" value="Автопересчет" name="auto_revision">
-                    {% endifequal %}
-                {% else %}
-                    <input type="submit" value="Окей" name="next">
-                    {% ifequal action "recalculation" %}
-                        <input type="submit" value="Автопересчет" name="auto_revision">
-                    {% endifequal %}
-                {% endif %}
+                <div class="buttons">
+                    {% if bunches.has_next %}
+                        {% ifequal action "recalculation" %}
+                            <input type="submit" value="Автопересчет" name="auto_revision" class="btn btn-warning">
+                        {% endifequal %}
+                        <input type="submit" value="Дальше" name="next" class="btn btn-primary">
+                    {% else %}
+                        {% ifequal action "recalculation" %}
+                            <input type="submit" value="Автопересчет" name="auto_revision" class="btn btn-warning">
+                        {% endifequal %}
+                        <input type="submit" value="Готово" name="next" class="btn btn-primary">
+                    {% endif %}
+                </div>
             </span>
         </div>
-
     </form>
     </div>
-    </div>
+</div>
+</div>
 </div>
 
 {% endfor %}

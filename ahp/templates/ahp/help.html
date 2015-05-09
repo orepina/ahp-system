@@ -1,0 +1,24 @@
+{% load staticfiles %}
+<link rel="stylesheet" href="{% static 'ahp/bootstrap.css' %}" />
+<div class="container">
+<div class="row">
+<div class="col-md-10 col-md-offset-1">
+    <br>
+    <div class="jumbotron">
+        <h2>Здравствуйте, {{user.name}}!</h2>
+        Это второй этап голосования по проблеме <strong>{{goal}}</strong>.<br>
+        На данном этапе предлагается сравнивать объекты  попарно по отношению к их воздействию на общую для них характеристику.<br><br>
+        Для этого используется шкала от 1 до 9, которая трактуется следующим образом:<br><br>
+        <div class="list-group">
+        <div class="list-group-item"><span class="label label-default">1</span>	 одинаковая значимость, два действия вносят одинаковый вклад в достижение цели</div>
+        <div class="list-group-item"><span class="label label-primary">3</span>	 некоторое преобладание значимости одного показателя фактора перед другим, незначительное предпочтение</div>
+        <div class="list-group-item"><span class="label label-success">5</span>	 существенное предпочтение или сильная значимость</div>
+        <div class="list-group-item"><span class="label label-warning">7</span>	 очень сильная значимость или очевидное предпочтение</div>
+        <div class="list-group-item"><span class="label label-danger">9</span>	 абсолютное предпочтение</div>
+        <div class="list-group-item"><span class="label label-default">2, 4, 6, 8</span>  промежуточные значения между соседними значениями шкалы; ситуация, когда необходимо компромиссное решение</div>
+        </div>
+    </div>
+</div>
+</div>
+</div>
+

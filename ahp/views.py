@@ -33,14 +33,12 @@ def main(request):
 
 def login(request):
     template_response = views.login(request)
-    # Do something with `template_response`
     return template_response
 
 def popup(request):
     return render(request, 'ahp/popup.html')
 
 
-# +пользователь может добавлять новые критерии?
 #сколько раз разрешать пользователю отправлять данные?
 def form_for_participant(request, hash_user_id):
     #hash_user_id = '809ffca6e3'
@@ -455,6 +453,7 @@ def form_for_comparison(request, hash_user_id):
     user = User.objects.get(id_hash=hash_user_id)
     user_group = user.group
     pairwise_list = data_for_comparison(user_group)
+    pairwise_list.insert(0,'help')
 
     paginator = Paginator(pairwise_list, 1)
     page = request.GET.get('page')
@@ -466,38 +465,44 @@ def form_for_comparison(request, hash_user_id):
         bunches = paginator.page(paginator.num_pages)
     if request.method == 'GET':
         if user.comparison_form == 'check':
-            return HttpResponse('ты уже заполнял')
+            return render(request, 'ahp/form_thanks.html')
         else:
+            node_goal = LevelNodes.objects.get(level=Level.objects.get(name='goal')).node
+            goal = Node.objects.get(pk=node_goal.pk)
             messages = ''
             action = ''
-            return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages, action: 'action' })
+            return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages, 'action': action, 'user': user, 'goal': goal })
 
     if request.method == 'POST':
-        # TODO сохранять предыдущие отмеченные результаты(тогда новая таблица нужна)
-        number = len(pairwise_list[int(bunches.number)-1]['children'])
-        pairwise_list[int(bunches.number)-1]['children'] = insert_priority(request.POST, pairwise_list[int(bunches.number)-1]['children'], line)
-        # проверка на заполненность всех вершин (кнопка не должна загораться до того как отмечены все и не прошли проверку)
-        if len(request.POST) == number+1 :
-            node_list, Matrix = create_Matrix(pairwise_list[int(bunches.number)-1]['children'])
-            OS, vector_priority, isRecalculation = calculate_weigth(Matrix)
-            if 'auto_revision' in request.POST:
-                user.confidence1 = user.confidence1 + 1
-                user.save()
-                return save_and_next(node_list, vector_priority, user, pairwise_list[int(bunches.number)-1]['parent'], bunches)
-            if 'next' in request.POST:
-                if isRecalculation:
-                    for_message = ''
-                    for index, node in enumerate(node_list):
-                        for_message = for_message + 'node: ' +str(node)+'vector_priority: '+str(vector_priority[index])
-                    messages = 'вы сравнили плохо, пересравните или автоматически ваши оценки пересчитаются вот так: '+for_message
-                    action = 'recalculation'
-                    return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages,  'action': action })
-                else:
-                    return save_and_next(node_list, vector_priority, user, pairwise_list[int(bunches.number)-1]['parent'], bunches)
+        if bunches.number==1:
+            url = "/ahp/comparison/"+str(user.id_hash)+"?page="+str(bunches.next_page_number())
+            return redirect(url)
         else:
-            messages = 'сравните пжлста все критерии'
-            action = 'not all'
-            return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages, action: 'action' })# + message
+            right_number = int(int(bunches.number)- 1)
+            number = len(pairwise_list[right_number]['children'])
+            pairwise_list[right_number]['children'] = insert_priority(request.POST, pairwise_list[right_number]['children'], line)
+            # проверка на заполненность всех вершин (кнопка не должна загораться до того как отмечены все и не прошли проверку)
+            if len(request.POST) == number+1 :
+                node_list, Matrix = create_Matrix(pairwise_list[right_number]['children'])
+                OS, vector_priority, isRecalculation = calculate_weigth(Matrix)
+                if 'auto_revision' in request.POST:
+                    user.confidence1 = user.confidence1 + 1
+                    user.save()
+                    return save_and_next(node_list, vector_priority, user, pairwise_list[right_number]['parent'], bunches)
+                if 'next' in request.POST:
+                    if isRecalculation:
+                        for_message = ''
+                        for index, node in enumerate(node_list):
+                            for_message = for_message +str(node)+':  '+str(format(vector_priority[index],'.2f'))+' \n'
+                        messages = 'Ваши оценки слишком противоречивые. \n Пересмотрите, пожалуйста, свои суждения или воспользуйтесь возможностью автоматического устранения противоречий, в результате которого получаются следующие веса:  \n'+for_message
+                        action = 'recalculation'
+                        return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages,  'action': action })
+                    else:
+                        return save_and_next(node_list, vector_priority, user, pairwise_list[right_number]['parent'], bunches)
+            else:
+                messages = 'Сравните, пожалуйста, все предложенные варианты '
+                action = 'not all'
+                return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages, action: 'action' })# + message
 
 
 def save_and_next(node_list, vector_priority, user, parent, bunches):
@@ -513,17 +518,14 @@ def save_and_next(node_list, vector_priority, user, parent, bunches):
         user_confidence(user)
         user.comparison_form = 'check'
         user.save()
-        return HttpResponse('спасибки')
+        return render('ahp/form_thanks.html')
 
 
 def insert_priority(data, pairwise_nodes, line):
     for index_node in data:
-        # избавиться от этого {u'next':
         if index_node != 'next' and index_node != 'auto_revision':
-            #избавиться от первого индекса потому что его можно брять у тек страницы + попробовать присваивать значения кортежами?(но нои не поппорядку)
             pairwise_nodes[int(index_node)]['priority'] = line[int(data[index_node])]['val']
             pairwise_nodes[int(index_node)]['value'] = int(data[index_node])
-            #pairwise_list[int(nodes[0])]['children'][int(nodes[1])]['priority'] = line[int(request.POST[index_node])]['val']
     return pairwise_nodes;
 
 
@@ -626,7 +628,10 @@ def user_confidence(user):
     sum = 0
     for other_user in other_users:
         sum = sum + other_user.confidence1
-    average = sum/len(other_users)
+    if len(other_users)>0:
+        average = sum/len(other_users)
+    else:
+        average = user.confidence1
     if user.confidence1<=average:
         user.confidence2 = 1
     else:
