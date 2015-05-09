@@ -4,10 +4,9 @@
 
 (function() {
     angular
-        .module('app',['components', 'checklist-model'])
+        .module('app',['components', 'checklist-model','ui.slider'])
         .factory('ajaxFactory', ajaxFactory)
         .factory('updateFactory', updateFactory)
-        .controller('treeController', treeController)
         .controller('hierarchyController', hierarchyController)
         .controller('groupsController', groupsController)
         .controller('chooseGroupController', chooseGroupController)

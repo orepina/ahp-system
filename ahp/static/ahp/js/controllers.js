@@ -1,51 +1,12 @@
 /**
  * Created by Repina on 15.03.2015.
  */
-//урлы на сервер сформировать по другому, может отдавать не по одной сущности,а объединять внутри страницы
 
 
 function tabController( $scope ){
     $scope.tab = {}
 }
 
-function treeController( $scope, ajaxFactory ){
-    $scope.adjacency_list = []; //структура дерева adjacency_list[n1] = [n2,n3]//удобнее для сервера матрицей смежности, хотя и ак норм, просто цикл на сервере
-    $scope.hash = {}; //описание всех объектов hash['n1'] = {name: '', description: '', users: [], groups: []}//может user и group вынести в отдельный массив+ инфо о сущностях раделить по хешам
-    $scope.hash_node = {};
-    $scope.hash_group = {};
-    $scope.hash_user = {};
-    $scope.hash_level = {};
-    $scope.level_nodes_list = {}; //уровни с вершинами  level_nodes_list['l1'] = [n1]
-    $scope.group_list = {}; //список групп со списком пользователей group_list['students'] = [u1,u2,u3]
-    //какие новые структуры?
-    //где инициализируем
-    //как мы будем отпарвлять дерево? целиком измененное или по частям
-
-    $scope.adjacency_list[1] = [2,3];
-    $scope.hash_node [1] = {name: 'node_1', description: 'node_1wotowt'};
-    $scope.hash_node [2] = {name: 'node_2', description: 'node_2222wotowt'};
-    $scope.hash_node [3] = {name: 'node_3', description: 'node_333333wotowt'};
-    $scope.testdatarequest = { adjacency_list:$scope.adjacency_list, hash_node: $scope.hash_node };
-
-    $scope.senddata = function() {
-        req = ajaxFactory.postRequest($scope.testdatarequest);
-        /*    req.success(function(data, status, headers, config) {
-           var r = JSON.parse(data)[1];
-            for( var key in r ){
-                console.log(key)
-                console.log(r[key])
-            }
-            console.log(r.fields.parent)
-        })
-        */
-
-    }
-
-    //функция для генерации дерева по уровням
-    //проходим по массиву с левелами, проверяем вершины
-    // как понять что вершины еще на уровень ниже, но на этом уровне ? смотрим есть ли у нее родители на это уровне ( постоянно бегать по уровню - плохо, но куда деваться)
-
-}
 
 function usersController( $scope, ajaxFactory, updateFactory ) {
     $scope.init = function() {
@@ -454,6 +415,7 @@ function groupsController( $scope, ajaxFactory, updateFactory  ) {
 }
 
 function hierarchyController( $scope, ajaxFactory, updateFactory ) {
+
     //разбить на функции
     $scope.init = function() {
         $scope.act_type = '';
@@ -555,18 +517,34 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
 
     };
 
-    $scope.selectAll = function() {
-        $scope.checked_group_list = []
-        for (group in $scope.group_hash){
-            $scope.checked_group_list.push(group)
-        }
-        console.log($scope.checked_group_list)
+    $scope.changePriority = function() {
+        group_hash[checked_group_list[0]].priority = 100
     };
+
+    $scope.slider = {
+        'options': {
+            start: function (event, ui) { },
+            stop: function (event, ui) { }
+            }
+    };
+
+    $scope.change = function(group_key) {
+        var sum = 0,
+            sum_dif = 0;
+        for (var i=0;i<$scope.checked_group_list.length;i++){
+            sum += $scope.group_hash[$scope.checked_group_list[i]].priority
+        }
+        sum_dif = (100-sum)/($scope.checked_group_list.length-1)
+        for (var i=0;i<$scope.checked_group_list.length;i++){
+            if ($scope.checked_group_list[i]==group_key) continue;
+            $scope.group_hash[$scope.checked_group_list[i]].priority += sum_dif;
+        }
+    }
 
     $scope.update = function() {
         ajaxFactory.getRequest('groups_list', '', '')
             .success(function(data, status, headers, config) {
-                $scope.group_hash = updateFactory.updateGroupHash(data);
+                $scope.group_hash = updateFactory.updateGroupPriority(data);
             }).error(function(data, status, headers, config){});
         ajaxFactory.getRequest('users_list', '', '')
             .success(function(data, status, headers, config) {
@@ -583,7 +561,11 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
     };
 
     $scope.calculate = function() {
-    ajaxFactory.postRequest('global_priority', $scope.checked_group_list)
+        group_list = []
+        for (var i=0;i<$scope.checked_group_list.length;i++){
+            group_list.push({'id': $scope.checked_group_list[i], 'priority': $scope.group_hash[$scope.checked_group_list[i]].priority})
+        };
+        ajaxFactory.postRequest('global_priority', group_list )
             .success(function(data, status, headers, config) {
                     $scope.result = data.result
             }).error(function(data, status, headers, config){});

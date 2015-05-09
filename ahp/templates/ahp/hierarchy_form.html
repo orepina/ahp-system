@@ -1,42 +1,84 @@
+{% load staticfiles %}
+<link rel="stylesheet" type="text/css" href="{% static 'ahp/hierarchy_form.css' %}" />
+<link rel="stylesheet" href="{% static 'ahp/bootstrap.css' %}" />
+
 {% csrf_token %}
-<form action="" method="post">
-{% if question_list %}
-    <div>
-    Ответьте на вопросы:
-        <ul>
-        {% for question in question_list %}
-            <li>{{ question.group }}
-            <label for="{{question.pk}}">{{ question.name }}: </label>
-            <input id="{{question.pk}}" type="text" name={{question.pk}} value="{{question.description }}">
-            <!--<input id="question.pk1" type='hidden' name="question_id" value="{{question.pk }}">-->
-            </li>
-        {% endfor %}
-        </ul>
-    </div>
-{% else %}
-nothing
-{% endif %}
+<div class="container">
+    <br>
+
+    <div class="row">
+    <div class="col-md-8 col-md-offset-2"><div class="jumbotron">
+    <form action="" method="post">
+
+    <h2>Здравствуйте, {{user.name}}.</h2>
+    {% if question_list %}
+        <div>
+        Ответьте на вопросы:
+            <ul>
+            {% for question in question_list %}
+                <li>{{ question.group }}
+                <label for="{{question.pk}}">{{ question.name }}: </label>
+                <input id="{{question.pk}}" type="text" name={{question.pk}} value="{{question.description }}">
+                <!--<input id="question.pk1" type='hidden' name="question_id" value="{{question.pk }}">-->
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+    {% else %}
+    {% endif %}
 
 
-{% if level_nodes %}
-    <div>
-    Выберите критерии, отражающие суть проблемы:
-        <ul>
-        {% for level in level_nodes %}
-            <li>{{ level.name }}
-                <ul>
-                {% for node in level.nodes %}
-                    <li> <input type="checkbox" name="node" id="{{node.pk}}" value="{{node.node.pk}}"/>{{ node.node }}</li>
+    {% if level_nodes %}
+        <div>
+            Вы принимаете участие в решении проблемы <strong>{{goal}}</strong>
+            <br><br>
+            <div>
+                <h3>Критерии</h3>
+                Выберите критерии на каждом уровне, наиболее отражающие по вашему мнению суть проблемы
+                {% for level in level_nodes %}
+                    {% if forloop.last %}
+                        <br><br>
+                        <h3>{{ level.name }}</h3>
+                        Выберите возможные исходы, которые Вы смогли бы оценить в дальнейшем
+                        <div class="list-group">
+                            {% for node in level.nodes %}
+                                <a href="#" class="list-group-item">
+                                    <label for={{node.pk}} class="pairwise_val">
+                                        <input type="checkbox" name="node" id="{{node.pk}}" value="{{node.node.pk}}"/>
+                                        {{ node.node.name }}
+                                        <small>({{ node.node.name }})</small>
+                                    </label>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h3 class="panel-title">{{ level.name }}</h3>
+                            </div>
+                            <div class="list-group">
+                            {% for node in level.nodes %}
+                                <a href="#" class="list-group-item">
+                                    <label for={{node.pk}} class="pairwise_val">
+                                    <input type="checkbox" name="node" id="{{node.pk}}" value="{{node.node.pk}}"/>
+                                        {{ node.node.name }}
+                                        <small>({{ node.node.name }})</small>
+                                    </label>
+                                </a>
+                            {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
                 {% endfor %}
-                </ul>
-            </li>
-        {% endfor %}
-        </ul>
-    </div>
-{% else %}
-nothing
-{% endif %}
+            </div>
+        </div>
+    {% else %}
+    nothing
+    {% endif %}
 
-    <input type="submit" value="OK">
-</form>
-
+        <input type="submit" value="Отправить" class="btn btn-primary">
+    </form>
+</div>
+</div>
+</div>
+</div>

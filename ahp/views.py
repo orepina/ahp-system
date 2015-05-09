@@ -47,34 +47,38 @@ def form_for_participant(request, hash_user_id):
     #TODO get or 404
     user = User.objects.get(id_hash=hash_user_id)
     user_group = user.group
+    goal = LevelNodes.objects.get(level=Level.objects.get(name='goal')).node
     if request.method == 'GET':
         if user.hierarchy_form == 'check':
-            return HttpResponse('ты уже заполнял')
+            return render(request, 'ahp/form_thanks.html')
         else:
             question_list = Question.objects.filter(group=user_group)
             levels = Level.objects.order_by('order')
             level_nodes = []
+            a = {}
             for level in levels:
                 nodes = LevelNodes.objects.filter(level=level)
                 if level.name == 'alternatives':
-                    a = {}
-                    a['name'] = level
+                    a['name'] = 'Возможные исходы'
                     a['nodes'] = []
                     for node in nodes:
                         if group_has_node(user_group, node):
                             a['nodes'].append(node)
-                    level_nodes.append(a)
                 else:
-                    l = {}
-                    l['name'] = level
-                    l['nodes'] = []
-                    for node in nodes:
-                        if group_has_node(user_group, node):
-                            l['nodes'].append(node)
-                    level_nodes.append(l)
+                    if level.name != 'goal':
+                        l = {}
+                        l['name'] = level.name
+                        l['nodes'] = []
+                        for node in nodes:
+                            if group_has_node(user_group, node):
+                                l['nodes'].append(node)
+                        level_nodes.append(l)
+            level_nodes.append(a)
             context = {
                 'question_list': question_list,
                 'level_nodes': level_nodes,
+                'user': user,
+                'goal': Node.objects.get(pk=goal.pk)
             }
             return render(request, 'ahp/hierarchy_form.html', context)
 
@@ -98,7 +102,7 @@ def form_for_participant(request, hash_user_id):
                     group_nodes.save()
         user.hierarchy_form = 'check'
         user.save()
-        return HttpResponse('спасибки')
+        return render(request, 'ahp/form_thanks.html')
 
 
 def group_has_node(group, node):
@@ -327,10 +331,11 @@ def user(request):
     description = data['description']
     email = data['email']
     group_id = data['group_id']
-    confidence = 1
+    confidence1 = 0
+    confidence2 = 0
     if data['act_type'] == 'add':
         group = Group.objects.get(pk=group_id)
-        User.objects.create(name=name, description='', email=email, id_hash='', group=group, confidence=1)
+        User.objects.create(name=name, description='', email=email, id_hash='', group=group, confidence1=confidence1, confidence2=confidence2)
     if data['act_type'] == 'edit':
         g = Group.objects.get(pk=group_id)
         u = User.objects.get(pk=user_id)
@@ -476,7 +481,8 @@ def form_for_comparison(request, hash_user_id):
             node_list, Matrix = create_Matrix(pairwise_list[int(bunches.number)-1]['children'])
             OS, vector_priority, isRecalculation = calculate_weigth(Matrix)
             if 'auto_revision' in request.POST:
-                #user.confidence = user.confidence - 1
+                user.confidence1 = user.confidence1 + 1
+                user.save()
                 return save_and_next(node_list, vector_priority, user, pairwise_list[int(bunches.number)-1]['parent'], bunches)
             if 'next' in request.POST:
                 if isRecalculation:
@@ -504,6 +510,7 @@ def save_and_next(node_list, vector_priority, user, parent, bunches):
         url = "/ahp/comparison/"+str(user.id_hash)+"?page="+str(bunches.next_page_number())
         return redirect(url)
     else:
+        user_confidence(user)
         user.comparison_form = 'check'
         user.save()
         return HttpResponse('спасибки')
@@ -599,7 +606,6 @@ def data_for_comparison(group):
     return pairwise_list
 
 
-
 def pairwise_generation(nodes):
     nodes_list = []
     include_nodes = []
@@ -615,6 +621,30 @@ def pairwise_generation(nodes):
     return nodes_list
 
 
+def user_confidence(user):
+    other_users = User.objects.filter(group=user.group, comparison_form='check')
+    sum = 0
+    for other_user in other_users:
+        sum = sum + other_user.confidence1
+    average = sum/len(other_users)
+    if user.confidence1<=average:
+        user.confidence2 = 1
+    else:
+        user.confidence2 = 1/(average-user.confidence1+1)
+    #придумать второе доверие
+    return ''
+
+
+def standard_deviation(group):
+    group_nodes = GroupNodes.objects.filter(group=group)
+    #except new user? -no
+    group_users = User.objects.filter(group=group, comparison_form='check')
+
+    list_of_standard_deviation = create_list_of_standard_deviation(group_nodes, group_users)
+
+    return ''
+
+
 def global_priority_calculation(request):
     groups = json.loads(request.body)
     #если мы передаем пользователей, значит надо брать готовый список, но пока мы этого не делаем, потом просто будем брать список из запроса
@@ -625,7 +655,7 @@ def global_priority_calculation(request):
         group_nodes = GroupNodes.objects.filter(group=group['id'])
         group_users = User.objects.filter(group=group['id'], comparison_form='check')
         for group_user in group_users:
-            users.append({id: group_user, group_priority: group['priority']})
+            users.append({'id': group_user, 'group_priority': float(group['priority'])/float((100*len(group_users)))})
         nodes_list.extend(group_nodes.values_list('node', flat=True))
     nodes = list(set(nodes_list))
 
@@ -636,6 +666,47 @@ def global_priority_calculation(request):
         }), content_type="application/json")
     else:
         return HttpResponse('ошибка')
+
+
+def create_list_of_standard_deviation(group_nodes, group_users):
+    list_of_standard_deviation = []
+    level = Level.objects.get(name='alternatives')
+    edges = Edge.objects.filter(level=level, node__in=set(group_nodes))
+    Matrix = create_standard_deviation_Matrix(edges, group_users)
+    list_of_standard_deviation.append(Matrix)
+    while len(set(edges.values_list('parent', flat=True)))>1:
+        groups_edges = edges.filter(node__in=set(group_nodes))
+        parent_edges = Edge.objects.filter(node__in=set(groups_edges.values_list('parent', flat=True)))
+        Matrix = create_standard_deviation_Matrix(parent_edges, group_users)
+        list_of_standard_deviation.append(Matrix)
+        edges = parent_edges
+    return list_of_standard_deviation
+
+
+def create_standard_deviation_Matrix():
+    nodes = list(set(edges.values_list('node', flat=True)))
+    parents = list(set(edges.values_list('parent', flat=True)))
+    Matrix =  numpy.ones((len(nodes), len(parents)), "f")
+    sum_Matrix =  numpy.ones((len(nodes), len(parents)), "f")
+    for index_node, node in enumerate(nodes):
+        for index_parent, parent in enumerate(parents):
+            edge = edges.get(node=node,parent=parent)
+            for user in users:
+                try:
+                    weight = pow(Weight.objects.get(edge=edge, user=user['id']).weight, (user['group_priority']/len(users)))
+                except Weight.DoesNotExist:
+                    weight = 0
+                Matrix[index_node][index_parent] = Matrix[index_node][index_parent] + weight
+            Matrix[index_node][index_parent] = Matrix[index_node][index_parent]/len(users)
+            for user in users:
+                try:
+                    weight = pow(Weight.objects.get(edge=edge, user=user['id']).weight, (user['group_priority']/len(users)))
+                except Weight.DoesNotExist:
+                    weight = 0
+                sum_Matrix[index_node][index_parent] = sum_Matrix[index_node][index_parent] + pow(weight - Matrix[index_node][index_parent], 2)
+            sum_Matrix[index_node][index_parent] = pow(sum_Matrix[index_node][index_parent]/(len(user)-1), 0.5)
+    return sum_Matrix
+
 
 #везде передавать users или group
 #по group формируем вершины, по users - веса
@@ -669,7 +740,8 @@ def create_weigth_Matrix(edges, users):
             edge = edges.get(node=node,parent=parent)
             for user in users:
                 try:
-                    weight = pow(Weight.objects.get(edge=edge, user=user['id']).weight, (user['group_priority']/len(users)))
+                    weight = pow(Weight.objects.get(edge=edge, user=user['id']).weight, user['group_priority'])
+                    #weight = pow(Weight.objects.get(edge=edge, user=user['id']).weight, (user['group_priority']))
                 except Weight.DoesNotExist:
                     #weight = 1.0/len(nodes)
                     weight = 0

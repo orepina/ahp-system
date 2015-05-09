@@ -83,6 +83,16 @@ function updateFactory() {
             return group_hash;
         },
 
+        updateGroupPriority: function(data) {
+            var temp = JSON.parse(data.groups).concat(),
+                temp_count = data.groups_count,
+                group_priority = {};
+            for (var i=0; i<temp.length; i++){
+                group_priority[temp[i].pk] = {name: temp[i].fields.name, description: temp[i].fields.description, count: temp_count[temp[i].pk], priority: 0};
+            }
+            return group_priority;
+        },
+
         updateUserHash : function(data) {
             var temp = JSON.parse(data).concat(),
                 user_hash = {};
