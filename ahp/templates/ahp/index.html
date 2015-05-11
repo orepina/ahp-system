@@ -26,63 +26,68 @@
 {% verbatim angular %}
 <body ng-controller="tabController">
 
-<ul class="nav nav-tabs" ng-init="settab='1'" >
+<div class="menu-block">
+<ul class="nav nav-pills nav-stacked" ng-init="settab='1'" >
+
+    <li role="presentation" ng-click="settab='0'" ng-class="{active:settab=='0'}"><a href="#">Info</a></li>
     <li role="presentation" ng-click="settab='1'; tab.initHierarchy()" ng-class="{active:settab=='1'}"><a href="#">Иерарахия</a></li>
-    <li role="presentation" ng-click="settab='2'; tab.initGroups()" ng-class="{active:settab=='2'}"><a href="#">Группы</a></li>
-    <li role="presentation" ng-click="settab='3'; tab.initGroupHierarchyVotes()" ng-class="{active:settab=='3'}"><a href="#">Голосования</a></li>
+    <li role="presentation" ng-click="settab='2'; tab.initGroups()" ng-class="{active:settab=='2'}"><a href="#">Группы экспертов</a></li>
+    <li role="presentation" ng-click="settab='3'; tab.initGroupHierarchyVotes()" ng-class="{active:settab=='3'}"><a href="#">Опросы</a></li>
     <li role="presentation" ng-click="settab='4';" ng-class="{active:settab=='4'}"><a href="#">Расчет приоритетов</a></li>
 
     <li role="presentation" ng-click="settab='5'" ng-class="{active:settab=='5'}"><a href="#">Profile</a></li>
     <li role="presentation" ng-click="settab='6'" ng-class="{active:settab=='6'}"><a href="#">Messages</a></li>
 </ul>
+</div>
 
-
-<div ng-show="settab=='1'">
-    <div class="container" ng-controller="hierarchyController" ng-init="init()">
+<div class="background-block">
+<div ng-show="settab=='1'" class="hierarchy">
+    <div class="container" ng-controller="hierarchyController" ng-init="init()" >
         <popup></popup>
-        <div class="row">
-            <div class="h2">
+        <div class="row work-block">
+            <div class="title-block">
                 Цель
+            </div>
+            <h3>&nbsp;&nbsp;&nbsp;
                 {{node_hash[level_nodes_list[level_order[0]][0]].name}}
-                <button ng-click="editGoal(level_nodes_list[level_order[0]][0], level_order[0])" class="btn btn-default"><span class="glyphicon glyphicon-pencil"></span></button>
-            </div>
+                <button ng-click="editGoal(level_nodes_list[level_order[0]][0], level_order[0])" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
+            </h3>
+            <br><br>
         </div>
-        <div class="row">
-            <div class="col-md-7">
-                <div class="list-group">
-                    <div class="h3">
-                        Критерии
-                        <button ng-click="addLevel()" class="btn btn-default"><span class="glyphicon glyphicon-plus"></span></button>
-                    </div>
-                    <!--порядок уровней важен, поэтому либо level в массиве по порядку хранить, либо вывобить ordered by ID(KEY)-->
-                    <div ng-repeat="level in level_order" ng-if="$index > 1" class="list-group-item">
-                        {{level_hash[level].name}}
-                        <button ng-click="editLevel(level)" class="btn btn-default"><span class="glyphicon glyphicon-pencil"></span></button>
-                        <button ng-click="deletLevel(level)" class="btn btn-default"><span class="glyphicon glyphicon-remove"></span></button>
 
-                        <!--тут циклично уже нужно выводить-->
-                        <button ng-click="addNode(level, 'level')" class="btn btn-default"><span class="glyphicon glyphicon-plus"></span></button>
-                        <div ng-repeat="(node_key, node) in level_nodes_list[level]" class="list-group-item">
-                            {{node_hash[node].name}}
-                            <button ng-click="editNode(level, node, 'level')" class="btn btn-default"><span class="glyphicon glyphicon-pencil"></span></button>
-                            <button ng-click="deletNode(level, node, 'level')" class="btn btn-default"><span class="glyphicon glyphicon-remove"></span></button>
+        <div class="double">
+            <div class="work-block">
+                <div class="title-block">
+                    Критерии
+                </div>
+                <div class="crit-block" >
+                    <div ng-repeat="level in level_order" ng-if="$index > 1" class="level-block">
+                        <div class="small-title">
+                            {{level_hash[level].name}}
+                            <button ng-click="editLevel(level)" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
+                            <button ng-click="deletLevel(level)" class="btn btn-item"><span class="glyphicon glyphicon-remove"></span></button>
                         </div>
+                        <div  ng-repeat="(node_key, node) in level_nodes_list[level]" class="list-group-item">
+                            {{node_hash[node].name}}
+                            <button ng-click="editNode(level, node, 'level')" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
+                            <button ng-click="deletNode(level, node, 'level')" class="btn btn-item"><span class="glyphicon glyphicon-remove"></span></button>
+                        </div>
+                        <button ng-click="addNode(level, 'level')" class="btn btn-new"><span class="glyphicon glyphicon-plus">новый критерий</span></button>
                     </div>
+                    <button ng-click="addLevel()" class="btn btn-new"><span class="glyphicon glyphicon-plus">новый уровень</span></button>
                 </div>
             </div>
 
-            <div class="col-md-5">
-                <div class="list-group">
-                    <div class="h3">
-                        Альтернативы
-                        <button ng-click="addNode(level_order[1])" class="btn btn-default"><span class="glyphicon glyphicon-plus"></span></button>
-                    </div>
-                    <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" class="list-group-item">
-                        {{node_hash[node].name}}
-                        <button ng-click="editNode(level_order[1], node)" class="btn btn-default"><span class="glyphicon glyphicon-pencil"></span></button>
-                        <button ng-click="deletNode(level_order[1], node)" class="btn btn-default"><span class="glyphicon glyphicon-remove"></span></button>
-                    </div>
+            <div class="alt-block work-block">
+                <div class="title-block">
+                    Альтернативы
                 </div>
+                <div  ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" class="list-group-item">
+                    {{node_hash[node].name}}
+                    <button ng-click="editNode(level_order[1], node)" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
+                    <button ng-click="deletNode(level_order[1], node)" class="btn btn-item"><span class="glyphicon glyphicon-remove"></span></button>
+                </div>
+                <button ng-click="addNode(level_order[1])" class="btn btn-new"><span class="glyphicon glyphicon-plus">новая альтернатива</span></button>
             </div>
         </div>
     </div>
@@ -90,57 +95,58 @@
 
 
 <div ng-show="settab=='2'">
-    <div ng-controller="groupsController" class="container">
+    <div ng-controller="groupsController" class="container work-block">
         <popup></popup>
         <div class="row">
-            <div class="h3">
+            <div class="title-block" >
                 Группы
-                <button ng-click="addGroup()" class="btn btn-default"><span class="glyphicon glyphicon-plus"></span></button>
             </div>
         </div>
         <div class="row">
-            <div class="list-group">
-                <div ng-repeat="(group_id, group) in group_hash" class="list-group-item">
-                    {{group.name}}
-                    <button ng-click="editGroup(group_id)" class="btn btn-default"><span class="glyphicon glyphicon-pencil"></span></button>
-                    <button ng-click="deletGroup(group_id)" class="btn btn-default"><span class="glyphicon glyphicon-remove"></span></button>
-                    <button ng-click="settingsGroup(group_id)" class="btn btn-default">настройки группы</button>
-                    Добавить эксперта:
-                    <button ng-click="addUser(group_id)" class="btn btn-default"><span class="glyphicon glyphicon-plus"></span></button>
-                    <div class="list-group">
+            <div>
+                <div ng-repeat="(group_id, group) in group_hash" class="level-block">
+                    <div class="small-title">
+                        {{group.name}}
+                        <button ng-click="editGroup(group_id)" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
+                        <button ng-click="deletGroup(group_id)" class="btn btn-item"><span class="glyphicon glyphicon-remove"></span></button>
+                        <button ng-click="settingsGroup(group_id)" class="btn btn-item">---</button>
+                    </div>
+                    <div>
                         <div ng-repeat="user in user_list | filter: {group: group_id}" class="list-group-item">
                             {{user.name}}
-                            {{user.description}}
                             {{user.email}}
-                            <button ng-click="editUser(user, group_id)" class="btn btn-default"><span class="glyphicon glyphicon-pencil"></span></button>
-                            <button ng-click="deletUser(user, group_id)" class="btn btn-default"><span class="glyphicon glyphicon-remove"></span></button>
 
-                            <div ng-show="group.count['for_hierarchy'] > 0">
-                                    <button ng-show="user.hierarchy_form == ''" ng-click="sendEmailHierarchy(user, group_id)" class="btn btn-default"><span class="glyphicon glyphicon-send"></span></button>
-                                    <div ng-show="user.hierarchy_form == 'email'">письмо уже отправлено, но форма еще не заполнена</div>
-                                    <div ng-show="user.hierarchy_form == 'check'">форма заполнена, можно даже результаты показать</div>
+                            <button ng-click="editUser(user, group_id)" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
+                            <button ng-click="deletUser(user, group_id)" class="btn btn-item"><span class="glyphicon glyphicon-remove"></span></button>
 
+                            <span class="user-status">
+                                <span ng-show="group.count['for_hierarchy'] > 0">
+                                    <button ng-show="user.hierarchy_form == ''" ng-click="sendEmailHierarchy(user, group_id)" class="btn btn-primary"><span class="glyphicon glyphicon-envelope"></span></button>
+                                    <span ng-show="user.hierarchy_form == 'email'" class="label label-info"><span class="glyphicon glyphicon-time"></span></span>
+                                    <span ng-show="user.hierarchy_form == 'check'" class="label label-success"><span class="glyphicon glyphicon-ok"></span></span>
 
-                                <div ng ng-show="group.count['for_comparison'] > 0">
-                                        <button ng-show="user.comparison_form == ''" ng-click="sendEmailComparison(user, group_id)" class="btn btn-default"><span class="glyphicon glyphicon-send"></span></button>
-                                        <div ng-show="user.comparison_form == 'email'">письмо уже отправлено, но форма еще не заполнена</div>
-                                        <div ng-show="user.comparison_form == 'check'">форма заполнена, можно даже результаты показать</div>
+                                <span ng ng-show="group.count['for_comparison'] > 0">
+                                        <button ng-show="user.comparison_form == ''" ng-click="sendEmailComparison(user, group_id)" class="btn btn-primary"><span class="glyphicon glyphicon-envelope"></span></button>
+                                        <span ng-show="user.comparison_form == 'email'" class="label label-info"><span class="glyphicon glyphicon-time"></span></span>
+                                        <span ng-show="user.comparison_form == 'check'" class="label label-success"><span class="glyphicon glyphicon-ok"></span></span>
 
-                                 <!-- todo  else
-                                        можно даже прогресс в оцененных вершинах показывать, но может и нет -->
-                                </div>
-                                <div ng ng-hide="group.count['for_comparison'] > 0">
-                                else:
-                                    -выберите для группы вершины на голосование 2
-                                </div>
-                            </div>
-                            <div ng-hide="group.count['for_hierarchy'] > 0">
-                            else:
-                                -выберите для группы вершины на голосование 1
-                            </div>
+                                </span>
+                                <span ng ng-hide="group.count['for_comparison'] > 0" class="label label-danger">
+                                    <span class="glyphicon glyphicon-envelope"></span>
+                                    настройки г2
+                                </span>
+                            </span>
+                            <span ng-hide="group.count['for_hierarchy'] > 0" class="label label-danger">
+                                <span class="glyphicon glyphicon-envelope"></span>
+                                настройки г1
+                            </span>
+                            </span>
+
                         </div>
                     </div>
+                    <button ng-click="addUser(group_id)" class="btn btn-new"><span class="glyphicon glyphicon-plus">новый эксперт</span></button>
                 </div>
+                <button ng-click="addGroup()" class="btn btn-new"><span class="glyphicon glyphicon-plus">новая группа</span></button>
             </div>
         </div>
     </div>
@@ -148,12 +154,17 @@
 
 
 <div ng-show="settab=='3'" >
-    <div class="container">
+    <div class="container work-block">
         <div ng-controller="chooseGroupController">
+            <ul class="nav nav-pills vote-nav" ng-init="settab='3.1'" >
+                <li role="presentation" ng-click="settab='3.1'" ng-class="{active:settab=='3.1'}" class="vote-tab"><a href="#">Иерархия</a></li>
+                <li role="presentation" ng-click="settab='3.2'" ng-class="{active:settab=='3.2'}" class="vote-tab"><a href="#">Приоритеты</a></li>
+            </ul>
+
             <div class="row">
-                <div class="col-md-12">
+                <div class="title-block">
                     <span class="h3">
-                        Группы
+                        Настройки для группы
                     </span>
                     <span class="dropdown">
                         <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-expanded="true">
@@ -171,23 +182,60 @@
                 </div>
             </div>
 
+            <div ng-controller="groupHierarchyController" class="row">
+                <popup></popup>
+                <div ng-show="settab=='3.1'">
+                    <div class="col-md-6">
+                        <div class="h3">Критерии:</div>
+                        <div class="list-group">
+                            <div ng-repeat="level in level_order" ng-if="$index > 1" class="level-block">
+                                <div class="small-title">
+                                    {{level_hash[level].name}}
+                                </div>
+                                <div ng-show="level_nodes_list[level].length>0" ng-repeat="(node_key, node) in level_nodes_list[level]" class="list-group-item">
+                                    <label>
+                                        <input type="checkbox" checklist-model="group_nodes_list[chosen_group]" checklist-value="node">
+                                        {{node_hash[node].name}}
+                                    </label>
 
-                <ul class="nav nav-tabs" ng-init="settab='3.1'" >
-                    <li role="presentation" ng-click="settab='3.1'" ng-class="{active:settab=='3.1'}"><a href="#">Первое</a></li>
-                    <li role="presentation" ng-click="settab='3.2'" ng-class="{active:settab=='3.2'}"><a href="#">Второе</a></li>
-                </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                <div ng-controller="groupHierarchyController" class="row">
-                    <popup></popup>
-                    <div ng-show="settab=='3.1'">
+                    <div class="col-md-6">
+                        <div class="h3">Альтернативы:</div>
+                        <div class="list-group">
+                            <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" class="list-group-item">
+                                <label>
+                                <input type="checkbox" checklist-model="group_nodes_list[chosen_group]" checklist-value="node">
+                                {{node_hash[node].name}}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="button-group">
+                        <button ng-click="save(chosen_group)" class="btn btn-primary">Сохранить настройки для данной группы</button>
+                        <div ng-show="save_nodes=='success'" class="alert alert-success">Настройки успешно сохранены</div>
+                        <div ng-show="save_nodes=='error'" class="alert alert-danger">Ошибка при сохранении, повторите позже</div>
+                    </div>
+                </div>
+
+                <div ng-show="settab=='3.2'">
+                    <div ng-controller="groupHierarchyVotesController" >
                         <div class="col-md-7">
                             <div class="h3">Критерии:</div>
                             <div class="list-group">
-                                <div ng-repeat="level in level_order" ng-if="$index > 1">
-                                    {{level_hash[level].name}}
-                                    <div  ng-show="level_nodes_list[level].length>0" ng-repeat="(node_key, node) in level_nodes_list[level]" class="list-group-item">
-                                        <input type="checkbox" checklist-model="group_nodes_list[chosen_group]" checklist-value="node">
-                                        {{node_hash[node].name}}
+                                <div ng-repeat="level in level_order" ng-if="$index > 1"class="level-block">
+                                    <div class="small-title">
+                                        {{level_hash[level].name}}
+                                    </div>
+                                    <div  ng-repeat="(node_key, node) in level_nodes_list[level]" ng-if="isForShow(chosen_group, node)" class="list-group-item">
+                                        <label>
+                                            <input type="checkbox" checklist-model="group_nodes_for_comparison_list[chosen_group]" checklist-value="node">
+                                            {{node_hash[node].name}}
+                                            <span class="badge">{{group_nodes_count_list[chosen_group][node].count}}</span>
+                                        </label>
                                     </div>
                                 </div>
                             </div>
@@ -196,47 +244,23 @@
                         <div class="col-md-5">
                             <div class="h3">Альтернативы:</div>
                             <div class="list-group">
-                                <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" class="list-group-item">
-                                    <input type="checkbox" checklist-model="group_nodes_list[chosen_group]" checklist-value="node">
-                                    {{node_hash[node].name}}
+                                <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" ng-if="isForShow(chosen_group, node)" class="list-group-item">
+                                    <label>
+                                        <input type="checkbox" checklist-model="group_nodes_for_comparison_list[chosen_group]" checklist-value="node">
+                                        {{node_hash[node].name}}
+                                        <span class="badge">{{group_nodes_count_list[chosen_group][node].count}}</span>
+                                    </label>
                                 </div>
                             </div>
                         </div>
-                        <button ng-click="save(chosen_group)">Сохранить настройки для данной группы</button>
-                    </div>
-
-                    <div ng-show="settab=='3.2'">
-                        <div ng-controller="groupHierarchyVotesController" >
-                            <div class="col-md-7">
-                                <div class="h3">Критерии:</div>
-                                <div class="list-group">
-                                    <div ng-repeat="level in level_order" ng-if="$index > 1">
-                                        {{level_hash[level].name}}
-                                        <div  ng-repeat="(node_key, node) in level_nodes_list[level]" ng-if="isForShow(chosen_group, node)" class="list-group-item">
-                                            <input type="checkbox" checklist-model="group_nodes_for_comparison_list[chosen_group]" checklist-value="node">
-                                            {{node_hash[node].name}}
-                                            <!--придумать как 0 выводить если нет инфы-->
-                                            {{group_nodes_count_list[chosen_group][node].count}}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-5">
-                                <div class="h3">Альтернативы:</div>
-                                <div class="list-group">
-                                    <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" ng-if="isForShow(chosen_group, node)" class="list-group-item">
-                                        <input type="checkbox" checklist-model="group_nodes_for_comparison_list[chosen_group]" checklist-value="node">
-                                        {{node_hash[node].name}}
-                                        {{group_nodes_count_list[chosen_group][node].count}}
-
-                                    </div>
-                                </div>
-                            </div>
-                            <button ng-click="send(chosen_group)">сохранить</button>
+                        <div class="button-group">
+                            <button ng-click="send(chosen_group)" class="btn btn-primary">Сохранить настройки для данной группы</button>
+                        <div ng-show="save_nodes_v=='success'" class="alert alert-success">Настройки успешно сохранены</div>
+                        <div ng-show="save_nodes_v=='error'" class="alert alert-danger">Ошибка при сохранении, повторите позже</div>
                         </div>
                     </div>
                 </div>
+            </div>
 
 
         </div>
@@ -245,7 +269,7 @@
 
 
 <div ng-show="settab=='4'">
-    <div ng-controller="globalPriorityController" ng-init="init()">
+    <div ng-controller="globalPriorityController" ng-init="init()" class="container work-block">
 
         <div class="col-md-4">
             <div ng-repeat="(group_key, group) in group_hash">
@@ -277,7 +301,7 @@
         <button ng-click="calculate()">Расчитать</button>
     </div>
 </div>
-
+</div>
 </body>
 {% endverbatim angular %}
 </html>

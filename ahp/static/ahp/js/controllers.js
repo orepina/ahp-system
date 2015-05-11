@@ -181,10 +181,12 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
         $scope.level_order = [];
         $scope.message = '';
         $scope.act_type = '';
+        $scope.save_nodes = ''
         $scope.update();
     };
 
     $scope.update = function() {
+    //get exist users with email send
         ajaxFactory.getRequest('common_hierarchy', '', '')
             .success(function(data, status, headers, config) {
                 $scope.node_hash = updateFactory.updateNodeHash(data.nodes);
@@ -202,7 +204,7 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
 
     $scope.save = function(chosen_group) {
         $scope.message = $scope.check_levels($scope.group_nodes_list[chosen_group]);
-        if ($scope.message != ''){
+        if ($scope.message != '') {
             $scope.act_type = 'error';
             $scope.entity_type = 'error';
         }
@@ -210,9 +212,9 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
             ajaxFactory.postRequest('chosen_group_nodes', {nodes: $scope.group_nodes_list[chosen_group], group: chosen_group})
                 .success(function(data, status, headers, config) {
                     $scope.init();
-                }).error(function(data, status, headers, config){});
+                    $scope.save_nodes = 'success'
+                }).error(function(data, status, headers, config){$scope.save_nodes = 'error'});
         }
-
     };
 
     $scope.check_levels = function(nodes) {
@@ -220,7 +222,7 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
             alt_message = '',
             level_message = [],
             message = '';
-        if (nodes.length>0) {
+        if (typeof(nodes)!=='undefined' && nodes.length>0) {
             for (var level in $scope.level_nodes_list) {
                 if ($scope.level_hash[level].name == 'goal') continue;
                 levels_count[level] = 0;
@@ -246,10 +248,8 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
         else {
             message = 'Вы не выбрали ни одного критерия и ни одной альтернативы'
         }
-        return message;
+        return message
     }
-
-
 }
 
 function groupHierarchyVotesController( $scope, ajaxFactory, updateFactory ) {
@@ -258,8 +258,8 @@ function groupHierarchyVotesController( $scope, ajaxFactory, updateFactory ) {
         $scope.group_nodes_count_list = {};
         $scope.group_nodes_for_comparison_list = {};
         $scope.message = '';
-        $scope.act_type = '';
         $scope.entity_type = '';
+        $scope.save_nodes_v = ''
         $scope.update();
     };
 
@@ -273,44 +273,42 @@ function groupHierarchyVotesController( $scope, ajaxFactory, updateFactory ) {
     };
 
     $scope.update = function() {
-
         ajaxFactory.getRequest('group_nodes_list', '', '')
             .success(function (data, status, headers, config) {
                 var temp = updateFactory.updateGroupNodesVotesList(data.group_nodes);
                 $scope.group_nodes_count_list = temp.count;
                 $scope.group_nodes_for_comparison_list = temp.type;
-                console.log('groupHierarchyVotesController: group_nodes_list   ', temp)
-            }).error(function(data, status, headers, config){});
+                $scope.save_nodes = 'success'
+            }).error(function(data, status, headers, config){$scope.save_nodes = 'error'});
     };
 
     $scope.isForShow = function(group, node) {
         return $scope.group_nodes_list[group] && $scope.group_nodes_list[group].indexOf(node)>=0 ;
     };
 
-    $scope.save = function () {
+    $scope.send = function(chosen_group) {
+        console.log('send ')
+        $scope.$parent.message = $scope.$parent.check_levels($scope.group_nodes_for_comparison_list[chosen_group]);
+        console.log('message  ', $scope.message)
+        if ($scope.$parent.message != '') {
+            $scope.$parent.act_type = 'error';
+            $scope.$parent.entity_type = 'error';
+        }
+        else {
+            ajaxFactory.postRequest('chosen_group_nodes_for_comparison', {nodes: $scope.group_nodes_for_comparison_list[chosen_group], group: chosen_group})
+                .success(function(data, status, headers, config) {
+                    $scope.init();
+                    $scope.save_nodes_v = 'success'
+                }).error(function(data, status, headers, config){$scope.save_nodes_v = 'error'});
+        }
+    };
+
+     $scope.save = function () {
         ajaxFactory.postRequest('chosen_group_nodes_for_comparison', $scope.group_nodes_for_comparison_list)
             .success(function(data, status, headers, config) {
                 $scope.init();
             }).error(function(data, status, headers, config){});
     };
-
-    $scope.send = function (chosen_group) {
-        $scope.message = $scope.$parent.check_levels($scope.group_nodes_for_comparison_list[chosen_group]);
-        if ($scope.message != ''){
-            $scope.act_type = 'error';
-            $scope.entity_type = 'error';
-        }
-        else {
-            ajaxFactory.postRequest('chosen_group_nodes_for_comparison', {nodes: $scope.group_nodes_for_comparison_list[chosen_group], group: chosen_group})
-                //пока что отправлять будем все кучей, но может  отправлять например при каждом нажатии
-                .success(function(data, status, headers, config) {
-                    console.log($scope.group_nodes_for_comparison_list);
-                    // init, но не всего!
-                    $scope.init();
-                }).error(function(data, status, headers, config){});
-        }
-    };
-    //сохраняет только чекбоксы, остальное в других местах. поэтому нужно избавиться от кнопки
 }
 
 function groupsController( $scope, ajaxFactory, updateFactory  ) {
@@ -454,9 +452,9 @@ function hierarchyController( $scope, ajaxFactory, updateFactory ) {
     };
 
     //переписать присваивание в цикле
-    $scope.paramForNodePopup = function(act_type, name, description, level_id, node_id, parent)  {
+    $scope.paramForNodePopup = function(entity_type, act_type, name, description, level_id, node_id, parent)  {
         $scope.act_type = act_type;
-        $scope.entity_type = 'node';
+        $scope.entity_type = entity_type;
         $scope.name = name;
         $scope.description = description;
         $scope.level_id = level_id;
@@ -466,7 +464,7 @@ function hierarchyController( $scope, ajaxFactory, updateFactory ) {
 
 
     $scope.editGoal = function(node_id, level_id) {
-        $scope.paramForNodePopup('edit', $scope.node_hash[node_id].name, $scope.node_hash[node_id].description, level_id, node_id,'');
+        $scope.paramForNodePopup('goal', 'edit', $scope.node_hash[node_id].name, $scope.node_hash[node_id].description, level_id, node_id,'');
     };
 
     //организовать присваивания вызовом отдельной функции
@@ -483,20 +481,19 @@ function hierarchyController( $scope, ajaxFactory, updateFactory ) {
     };
 
     $scope.addNode = function(level_id, parent) {
-        $scope.paramForNodePopup('add', '', '', level_id, '', parent);
+        entity_type = $scope.level_hash[level_id].name == 'alternatives' ? 'alternative' : 'node'
+        $scope.paramForNodePopup(entity_type,'add', '', '', level_id, '', parent);
     };
 
     $scope.editNode = function(level_id, node_id, parent) {
-        $scope.paramForNodePopup('edit', $scope.node_hash[node_id].name, $scope.node_hash[node_id].description, level_id, node_id, parent);
+        entity_type = $scope.level_hash[level_id].name == 'alternatives' ? 'alternative' : 'node'
+        $scope.paramForNodePopup(entity_type, 'edit', $scope.node_hash[node_id].name, $scope.node_hash[node_id].description, level_id, node_id, parent);
     };
 
     $scope.deletNode = function(level_id, node_id, parent) {
-        $scope.paramForNodePopup('delet', $scope.node_hash[node_id].name, $scope.node_hash[node_id].description, level_id, node_id, parent);
+        entity_type = $scope.level_hash[level_id].name == 'alternatives' ? 'alternative' : 'node'
+        $scope.paramForNodePopup(entity_type, 'delet', $scope.node_hash[node_id].name, $scope.node_hash[node_id].description, level_id, node_id, parent);
     };
-
-    $scope.test = function() {
-        console.log('lalala')
-    }
 
 }
 
