@@ -50,7 +50,7 @@ function usersController( $scope, ajaxFactory, updateFactory ) {
         $scope.act_type = 'send_email';
         $scope.name = user.name;
         $scope.description = user.description;
-        $scope.email =user.email;
+        $scope.email = user.email;
         $scope.user_id = user.id;
     }
 }
@@ -59,6 +59,7 @@ function chooseGroupController( $scope, ajaxFactory, updateFactory ) {
 
     $scope.init = function() {
         $scope.group_hash = {};
+        $scope.groups_votes = {}
         $scope.update();
     };
 
@@ -72,6 +73,11 @@ function chooseGroupController( $scope, ajaxFactory, updateFactory ) {
                         break;
                     }
                 }
+            })
+            .error(function (data, status, headers, config) {});
+        ajaxFactory.getRequest('groups_votes', '')
+            .success(function (data, status, headers, config) {
+                $scope.groups_votes = updateFactory.updateGroupVotes(data.group_votes);
             })
             .error(function (data, status, headers, config) {});
     };
@@ -181,7 +187,9 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
         $scope.level_order = [];
         $scope.message = '';
         $scope.act_type = '';
-        $scope.save_nodes = ''
+        $scope.save_nodes = '';
+        $scope.graphics = '';
+        $scope.edges_list = [];
         $scope.update();
     };
 
@@ -190,10 +198,10 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
         ajaxFactory.getRequest('common_hierarchy', '', '')
             .success(function(data, status, headers, config) {
                 $scope.node_hash = updateFactory.updateNodeHash(data.nodes);
+                $scope.edges_list = updateFactory.updateEdgesList(data.edges);
                 $scope.level_hash = updateFactory.updateLevelHash(data.levels);
                 $scope.level_order = updateFactory.updateLevelOrder(data.levels);
                 $scope.level_nodes_list = updateFactory.updateLevelList(data.level_nodes);
-                $scope.adjacency_list = updateFactory.updateAdjacencyList(data.edges);
             })
             .error(function(data, status, headers, config){});
         ajaxFactory.getRequest('group_nodes_list', '', '')
@@ -259,7 +267,8 @@ function groupHierarchyVotesController( $scope, ajaxFactory, updateFactory ) {
         $scope.group_nodes_for_comparison_list = {};
         $scope.message = '';
         $scope.entity_type = '';
-        $scope.save_nodes_v = ''
+        $scope.save_nodes_v = '';
+        $scope.graphics = '';
         $scope.update();
     };
 
@@ -422,6 +431,8 @@ function hierarchyController( $scope, ajaxFactory, updateFactory ) {
         $scope.level_hash = {};
         $scope.level_nodes_list = {}; //уровни с вершинами  level_nodes_list['1'] = [n1]
         $scope.level_order = []; //порядок уровней =
+        $scope.edges_list = [];
+        $scope.graphics = ''
         $scope.update();
     };
 
@@ -437,7 +448,8 @@ function hierarchyController( $scope, ajaxFactory, updateFactory ) {
                 $scope.level_hash = updateFactory.updateLevelHash(data.levels);
                 $scope.level_order = updateFactory.updateLevelOrder(data.levels);
                 $scope.level_nodes_list = updateFactory.updateLevelList(data.level_nodes);
-                $scope.adjacency_list = updateFactory.updateAdjacencyList(data.edges);
+                //$scope.adjacency_list = updateFactory.updateAdjacencyList(data.edges);
+                $scope.edges_list = updateFactory.updateEdgesList(data.edges);
             })
             .error(function(data, status, headers, config){})
     };
@@ -499,10 +511,17 @@ function hierarchyController( $scope, ajaxFactory, updateFactory ) {
 
 function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
 
+    $scope.tab.initGlobalPriority = function() {
+        $scope.init()
+    };
+
+    $scope.Math = window.Math;
+
     $scope.init = function() {
         $scope.act_type = '';
         $scope.group_hash = {};
-        $scope.user_list = [];
+        $scope.user_confidence_list = [];
+        $scope.checked_user_list = [];
         $scope.checked_group_list = [];
         $scope.all = false
         $scope.node_hash = {};
@@ -510,8 +529,16 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
         $scope.level_order = [];
         $scope.result = {};
         $scope.group_priority = {};
+        $scope.show_priority = false;
+        $scope.calculated = false;
         $scope.update();
 
+    };
+
+    $scope.initResult = function() {
+        for (var i=0;i<$scope.level_nodes_list[$scope.level_order[1]].length;i++) {
+            $scope.result[$scope.level_nodes_list[$scope.level_order[1]][i]]=0;
+        }
     };
 
     $scope.changePriority = function() {
@@ -527,14 +554,27 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
 
     $scope.change = function(group_key) {
         var sum = 0,
-            sum_dif = 0;
+            sum_dif = 0,
+            zero = false;
         for (var i=0;i<$scope.checked_group_list.length;i++){
-            sum += $scope.group_hash[$scope.checked_group_list[i]].priority
+            sum = Math.round((sum+$scope.group_hash[$scope.checked_group_list[i]].priority)*10)/10
         }
-        sum_dif = (100-sum)/($scope.checked_group_list.length-1)
+        sum_dif = Math.round(((100-sum)/($scope.checked_group_list.length-1))*10)/10
         for (var i=0;i<$scope.checked_group_list.length;i++){
+            if ($scope.group_hash[$scope.checked_group_list[i]].priority>=100&&$scope.checked_group_list[i]==group_key) {
+                max_id = $scope.checked_group_list[i];
+                for (var i=0;i<$scope.checked_group_list.length;i++){
+                    if ($scope.checked_group_list[i]==max_id) continue;
+                    $scope.group_hash[$scope.checked_group_list[i]].priority = 0;
+                }
+                continue;
+            }
             if ($scope.checked_group_list[i]==group_key) continue;
-            $scope.group_hash[$scope.checked_group_list[i]].priority += sum_dif;
+            if ($scope.group_hash[$scope.checked_group_list[i]].priority+sum_dif>0) {
+                $scope.group_hash[$scope.checked_group_list[i]].priority = Math.round(($scope.group_hash[$scope.checked_group_list[i]].priority+sum_dif)*10)/10
+            } else {
+                $scope.group_hash[$scope.checked_group_list[i]].priority = 0;
+            }
         }
     }
 
@@ -543,9 +583,10 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
             .success(function(data, status, headers, config) {
                 $scope.group_hash = updateFactory.updateGroupPriority(data);
             }).error(function(data, status, headers, config){});
-        ajaxFactory.getRequest('users_list', '', '')
+        ajaxFactory.getRequest('user_confidence_list', '', '')
             .success(function(data, status, headers, config) {
-                $scope.user_list = updateFactory.updateUserList(data.users);
+                $scope.user_confidence_list = updateFactory.updateUserConfidenceList(data.users).info;
+                $scope.checked_user_list = updateFactory.updateUserConfidenceList(data.users).list;
             }).error(function(data, status, headers, config){})
         ajaxFactory.getRequest('common_hierarchy', '', '')
             .success(function(data, status, headers, config) {
@@ -553,20 +594,33 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
                 //$scope.level_hash = updateFactory.updateLevelHash(data.levels);
                 $scope.level_order = updateFactory.updateLevelOrder(data.levels);
                 $scope.level_nodes_list = updateFactory.updateLevelList(data.level_nodes);
+                $scope.initResult();
             })
             .error(function(data, status, headers, config){});
     };
 
     $scope.calculate = function() {
-        group_list = []
+        var group_list = [];
+
         for (var i=0;i<$scope.checked_group_list.length;i++){
-            group_list.push({'id': $scope.checked_group_list[i], 'priority': $scope.group_hash[$scope.checked_group_list[i]].priority})
+            var priority = ($scope.show_priority) ? $scope.group_hash[$scope.checked_group_list[i]].priority : 100/$scope.checked_group_list.length;
+            console.log(priority)
+            group_list.push({'id': $scope.checked_group_list[i], 'priority': priority})
         };
-        ajaxFactory.postRequest('global_priority', group_list )
+
+        ajaxFactory.postRequest('global_priority', {groups: group_list, users: $scope.checked_user_list})
             .success(function(data, status, headers, config) {
-                    $scope.result = data.result
+                    $scope.result = data.result;
+                    $scope.calculated = true;
             }).error(function(data, status, headers, config){});
     }
+
+    $scope.user_settings = function(group_key) {
+        $scope.chosen_group = group_key;
+        $scope.act_type = 'user_list';
+        $scope.entity_type = 'user_list';
+    };
+
 
 
 }

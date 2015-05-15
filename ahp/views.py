@@ -12,8 +12,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, get_object_or_404, render_to_response, redirect
 from django.core.mail import send_mail, BadHeaderError
 from django.core import serializers
-from django.db.models import F
-from django.db.models import Max
+from django.db.models import F, Max, Sum, Q
 from django.template import RequestContext, loader
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.urlresolvers import reverse
@@ -30,6 +29,10 @@ from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, 
 
 def main(request):
     return render(request, 'ahp/index.html')
+
+
+def hierarchy_graph(request):
+    return render(request, 'ahp/hierarchy_graph.html')
 
 def login(request):
     template_response = views.login(request)
@@ -81,9 +84,7 @@ def form_for_participant(request, hash_user_id):
             return render(request, 'ahp/hierarchy_form.html', context)
 
     if request.method == 'POST':
-        #TODO тк мы вносим в БД информацию что форма пройдена(user.hierarchy_form = 'check'), то можно заблокировать открытие формы и не перезаписывать данные
-        # что делать если мы разрешии отправлять несколько раз, а пользователь снял галочку? (удалять все)
-        UserNodes.objects.filter(user=user).delete()
+        #if len(request.POST.getlist('node'))<3:
         for field in request.POST:
             if field!='node':
                 question = Question.objects.get(pk=field)
@@ -95,7 +96,6 @@ def form_for_participant(request, hash_user_id):
                     user_nodes = UserNodes.objects.create(user=user, node=node)
                     group_nodes = GroupNodes.objects.get(group=user_group, node=node)
                     group_nodes.type = 'user_choice'
-                    #можно накрутить количство, поэтому может в UserNodes добавить group и агрегировать по ней
                     group_nodes.count = group_nodes.count+1
                     group_nodes.save()
         user.hierarchy_form = 'check'
@@ -432,23 +432,23 @@ def form_for_comparison(request, hash_user_id):
     #hash_user_id = '809ffca6e3'
     #TODO get or 404
     #TODO - делать ли кнопку назад? (если да, то в GET считываем из БД, тогда в БД добавить поле с view и наверное даже новую таблицу(потому что пары формируются при обращении, в БД только вектор)
-    line = [{'val':9, 'view':9},
-            {'val':8, 'view':8},
-            {'val':7, 'view':7},
-            {'val':6, 'view':6},
-            {'val':5, 'view':5},
-            {'val':4, 'view':4},
-            {'val':3, 'view':3},
-            {'val':2, 'view':2},
-            {'val':1, 'view':1},
-            {'val':1.0/2, 'view':2},
-            {'val':1.0/3, 'view':3},
-            {'val':1.0/4, 'view':4},
-            {'val':1.0/5, 'view':5},
-            {'val':1.0/6, 'view':6},
-            {'val':1.0/7, 'view':7},
-            {'val':1.0/8, 'view':8},
-            {'val':1.0/9, 'view':9},
+    line = [{'val':9, 'view':9, 'color': '#275E8C'},
+            {'val':8, 'view':8, 'color': '#275E8C'},
+            {'val':7, 'view':7, 'color': '#275E8C'},
+            {'val':6, 'view':6, 'color': '#275E8C'},
+            {'val':5, 'view':5, 'color': '#275E8C'},
+            {'val':4, 'view':4, 'color': '#275E8C'},
+            {'val':3, 'view':3, 'color': '#275E8C'},
+            {'val':2, 'view':2, 'color': '#275E8C'},
+            {'val':1, 'view':1, 'color': '#275E8C'},
+            {'val':1.0/2, 'view':2, 'color': '#275E8C'},
+            {'val':1.0/3, 'view':3, 'color': '#275E8C'},
+            {'val':1.0/4, 'view':4, 'color': '#275E8C'},
+            {'val':1.0/5, 'view':5, 'color': '#275E8C'},
+            {'val':1.0/6, 'view':6, 'color': '#275E8C'},
+            {'val':1.0/7, 'view':7, 'color': '#275E8C'},
+            {'val':1.0/8, 'view':8, 'color': '#275E8C'},
+            {'val':1.0/9, 'view':9, 'color': '#275E8C'},
             ]
     user = User.objects.get(id_hash=hash_user_id)
     user_group = user.group
@@ -488,7 +488,7 @@ def form_for_comparison(request, hash_user_id):
                 if 'auto_revision' in request.POST:
                     user.confidence1 = user.confidence1 + 1
                     user.save()
-                    return save_and_next(node_list, vector_priority, user, pairwise_list[right_number]['parent'], bunches)
+                    return save_and_next(node_list, vector_priority, user, pairwise_list[right_number]['parent'], bunches, request)
                 if 'next' in request.POST:
                     if isRecalculation:
                         for_message = ''
@@ -498,14 +498,14 @@ def form_for_comparison(request, hash_user_id):
                         action = 'recalculation'
                         return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages,  'action': action })
                     else:
-                        return save_and_next(node_list, vector_priority, user, pairwise_list[right_number]['parent'], bunches)
+                        return save_and_next(node_list, vector_priority, user, pairwise_list[right_number]['parent'], bunches, request)
             else:
                 messages = 'Сравните, пожалуйста, все предложенные варианты '
                 action = 'not all'
                 return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages, action: 'action' })# + message
 
 
-def save_and_next(node_list, vector_priority, user, parent, bunches):
+def save_and_next(node_list, vector_priority, user, parent, bunches, request):
     for index, node in enumerate(node_list):
         edge = Edge.objects.get(parent=parent, node=node)
         weight = Weight.objects.update_or_create(edge=edge, user=user, defaults=dict(weight=vector_priority[index]))
@@ -518,7 +518,7 @@ def save_and_next(node_list, vector_priority, user, parent, bunches):
         user_confidence(user)
         user.comparison_form = 'check'
         user.save()
-        return render('ahp/form_thanks.html')
+        return render(request, 'ahp/form_thanks.html')
 
 
 def insert_priority(data, pairwise_nodes, line):
@@ -625,9 +625,8 @@ def pairwise_generation(nodes):
 
 def user_confidence(user):
     other_users = User.objects.filter(group=user.group, comparison_form='check')
-    sum = 0
-    for other_user in other_users:
-        sum = sum + other_user.confidence1
+    other_sum = other_users.aggregate(Sum('confidence2'))
+    sum = other_sum['confidence2__sum']
     if len(other_users)>0:
         average = sum/len(other_users)
     else:
@@ -635,31 +634,34 @@ def user_confidence(user):
     if user.confidence1<=average:
         user.confidence2 = 1
     else:
-        user.confidence2 = 1/(average-user.confidence1+1)
+        user.confidence2 = 1/(user.confidence1-average+1)
     #придумать второе доверие
-    return ''
 
 
 def standard_deviation(group):
     group_nodes = GroupNodes.objects.filter(group=group)
     #except new user? -no
     group_users = User.objects.filter(group=group, comparison_form='check')
-
     list_of_standard_deviation = create_list_of_standard_deviation(group_nodes, group_users)
-
     return ''
 
 
 def global_priority_calculation(request):
-    groups = json.loads(request.body)
+    data = json.loads(request.body)
+    groups = data['groups']
+    checked_users = data['users']
     #если мы передаем пользователей, значит надо брать готовый список, но пока мы этого не делаем, потом просто будем брать список из запроса
     #хотя если пользователи. то они из одной группы обычно, так что смысла мало(напишу потом если понадобится)
     nodes_list = []
     users = []
     for group in groups:
         group_nodes = GroupNodes.objects.filter(group=group['id'])
-        group_users = User.objects.filter(group=group['id'], comparison_form='check')
+        group_users = User.objects.filter(group=group['id'], comparison_form='check', pk__in=set(checked_users))
+        group_sum = group_users.aggregate(Sum('confidence2'))
         for group_user in group_users:
+            #print >> sys.stderr, 'group_sum  ', (float(group['priority'])/float(100)) * (float(group_user.confidence2)/float(group_sum['confidence2__sum']))
+            #group_priority = float(group['priority'])/float((100*len(group_users))
+            group_priority = (float(group['priority'])/float(100)) * (float(group_user.confidence2)/float(group_sum['confidence2__sum']))
             users.append({'id': group_user, 'group_priority': float(group['priority'])/float((100*len(group_users)))})
         nodes_list.extend(group_nodes.values_list('node', flat=True))
     nodes = list(set(nodes_list))
@@ -746,7 +748,6 @@ def create_weigth_Matrix(edges, users):
             for user in users:
                 try:
                     weight = pow(Weight.objects.get(edge=edge, user=user['id']).weight, user['group_priority'])
-                    #weight = pow(Weight.objects.get(edge=edge, user=user['id']).weight, (user['group_priority']))
                 except Weight.DoesNotExist:
                     #weight = 1.0/len(nodes)
                     weight = 0
@@ -761,3 +762,22 @@ def create_weigth_Matrix(edges, users):
     return Matrix
 
 
+def user_confidence_list(request):
+    users = serializers.serialize('json', User.objects.all())
+    return HttpResponse(json.dumps({
+        'users': users
+    }), content_type="application/json")
+
+
+def groups_votes(request):
+    groups = Group.objects.all();
+    group_votes = [];
+    for group in groups:
+        group_votes.append({
+            'group': group.pk,
+            'hierarchy_email': int(User.objects.filter(group=group, hierarchy_form='email').count()) + int(User.objects.filter(group=group, hierarchy_form='check').count()),
+            'comparison_email': int(User.objects.filter(group=group, comparison_form='email').count()) + int(User.objects.filter(group=group, comparison_form='check').count())
+        })
+    return HttpResponse(json.dumps({
+        'group_votes': group_votes
+    }), content_type="application/json")

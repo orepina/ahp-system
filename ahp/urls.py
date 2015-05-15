@@ -20,12 +20,14 @@ urlpatterns = patterns('',
     url(r'^questions/$', login_required(views.questions), name='questions'),
     url(r'^email/$', login_required(views.email), name='email'),
     url(r'^chosen_group_nodes_for_comparison/$', login_required(views.chosen_group_nodes_for_comparison), name='chosen_group_nodes_for_comparison'),
-
+    url(r'^user_confidence_list/$', login_required(views.user_confidence_list), name='user_confidence_list'),
+    url(r'^global_priority/$', login_required(views.global_priority_calculation), name='global_priority_calculation'),
     url(r'^$', login_required(views.main), name='main'),
     url(r'^popup/$', login_required(views.popup), name='popup'),
+    url(r'^hierarchy_graph/$', login_required(views.hierarchy_graph), name='hierarchy_graph'),
+    url(r'^groups_votes/$', login_required(views.groups_votes), name='groups_votes'),
 
     url(r'^login/$', 'django.contrib.auth.views.login', {'template_name': 'ahp/login.html'}),
-    url(r'^global_priority/$', views.global_priority_calculation, name='global_priority_calculation'),
 
     url(r'^hierarchy/(?P<hash_user_id>\w+)/$', views.form_for_participant, name='form_for_participant'),
     url(r'^comparison/(?P<hash_user_id>\w+)/$', views.form_for_comparison, name='form_for_comparison'),

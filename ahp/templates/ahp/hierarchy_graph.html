@@ -1,0 +1,40 @@
+    <style id="css">
+        .node rect,
+        .node circle,
+        .node ellipse {
+            stroke: #87B0D4;
+            fill: #87B0D4;
+            stroke-width: 1px;
+        }
+
+        .node.aa rect{
+            stroke: #ffffff ;
+            fill: #ffffff ;
+            stroke-width: 1px;
+        }
+
+        .node.checked rect{
+            stroke: #4A8FC9;
+            fill: #4A8FC9;
+            stroke-width: 1px;
+        }
+
+        .node.unchecked rect{
+            stroke: #E1E8EF ;
+            fill: #E1E8EF ;
+            stroke-width: 1px;
+        }
+
+        .edgePath path {
+            stroke: #87B0D4;
+            fill: #87B0D4;
+            stroke-width: 1.5px;
+        }
+    </style>
+<div id="popup-bg" ng-hide="graphics==''">
+    <div id="popup-graph">
+        <div class="close" ng-click="graphics=''">x</div>
+        <div class="svg"><svg width=800 height=500  viewBox="0 0 300 300"><g/></svg></div>
+    </div>
+
+</div>

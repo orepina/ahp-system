@@ -188,12 +188,31 @@
             <div ng-show="check=='error_email'" class="alert alert-danger" role="alert">
                 Ошибка при отправке письма. Попробуйте позже или перепроверьте адрес
             </div>
-            <button ng-show="check=='success_email' || check=='error_email'" ng-click="closePopup()" class="btn btn-default">OK</button>
+            <button ng-show="check=='error_email'" ng-click="closePopup()" class="btn btn-default">OK</button>
+            <button ng-show="check=='success_email'" ng-click="refresh_user()" class="btn btn-default">OK</button>
         </div>
+
 
         <div ng-show="entity_type=='error'">
             {{message}} <br><br>
             <button ng-click="closePopup()" class="btn btn-default">OK</button>
+        </div>
+
+
+        <div ng-show="entity_type=='user_list'" >
+            <h3>Эксперты</h3>
+            <div ng-repeat="user in user_confidence_list | filter: {group: chosen_group}" class="list-group-item">
+                <input type="checkbox" checklist-model="checked_user_list" checklist-value="user.id" ng-disabled="user.comparison_form!='check'">
+                {{user.name}}
+                {{user.avt_count}}
+                {{user.confidence}}
+                <span ng-show="user.hierarchy_form == 'check'" class="label label-success"><span class="glyphicon glyphicon-ok"></span></span>
+                <span ng-show="user.hierarchy_form != 'check'" class="label label-danger"><span class="glyphicon glyphicon-minus"></span></span>
+                <span ng-show="user.comparison_form == 'check'" class="label label-success"><span class="glyphicon glyphicon-ok"></span></span>
+                <span ng-show="user.hierarchy_form != 'check'" class="label label-danger"><span class="glyphicon glyphicon-minus"></span></span>
+
+            </div>
+            <button ng-click="closePopup()" class="btn btn-primary">OK</button>
         </div>
 
 

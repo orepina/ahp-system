@@ -22,7 +22,8 @@ div.work-block {
     box-shadow: 0 0 10px rgba(0,0,0,0.5);
 }
 
-div.hierarchy .work-block {
+div.hierarchy .work-block,
+div.priority .work-block{
     margin: 0 10px 10px 0;
 }
 
@@ -54,10 +55,16 @@ li.vote-tab.active > a:active{
     color: #337AB7;
 }
 
-* a {
+.btn-graph {
+    float: right;
+    margin-right: 10px;
     border-radius: 0px !important;
+}
+
+* a {
     border: none;
     outline: none;
+    border-radius: 0px !important;
 }
 
 * a::focus {
@@ -129,8 +136,7 @@ div.container {
 }
 
 .level-block>.list-group-item,
-.alt-block>.list-group-item
- {
+.alt-block>.list-group-item {
     padding-left: 20px;
     padding-right: 5px;
 }
@@ -139,9 +145,9 @@ div.container {
     background-color: #DADADA;
 }
 
-.list-group-item:last-child {
-    border-bottom-right-radius: 0 !important;
-    border-bottom-left-radius: 0 !important;
+.list-group-item:last-child,
+.list-group-item:first-child{
+    border-radius: 0 !important;
 }
 .button-group {
     width:100%;
@@ -150,26 +156,48 @@ div.container {
     text-align: center;
 }
 
+.btn-block {
+    width: 100%;
+    border-radius: 0 !important;
+    margin-top: 10px;
+}
+.sliders-priority {
+
+}
+
+.sliders-priority-title {
+    background-color: #F0AD4E;
+    padding: 10px;
+    box-shadow: 0 6px 4px -4px rgba(0, 0, 0, .2);
+    z-index: 10;
+    position: relative;
+}
+
 label{
     width: 100%;
     height: 100%;
 }
+
 .user-status {
     position: absolute;
-    right: 500px;
+    right: 200px;
+    font-size: 17px;
 }
-.user-status .btn {
-    padding: 2px 8px !important;
+
+.user-status .btn,
+.user-status .label {
+    padding: 2px 6px !important;
 }
 
 #popup-bg {
-    position: fixed;
+    position: absolute;
     left: 0;
     right: 0;
     top: 0;
     bottom: 0;
     background: rgba(0,0,0,0.8);
     z-index: 500;
+    min-height: 100%;
 }
 
 #popup {
@@ -182,8 +210,19 @@ label{
     position: absolute;
 }
 
+#popup-graph{
+    top: 10%;
+    left: 50%;
+    margin-left: -400px;
+    width: 800px;
+    padding: 20px 20px;
+    background: white;
+    position: absolute;
+    height: 500px;
+}
 
-#popup .close {
+#popup .close,
+#popup-graph .close {
     background: black;
     color: white;
     width: 20px;
@@ -200,7 +239,6 @@ label{
     text-align: center;
     margin-bottom: 10px;
 }
-
 
 div.node-btn {
     position: absolute;

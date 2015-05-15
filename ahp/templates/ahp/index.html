@@ -21,6 +21,9 @@
     <link rel="stylesheet" href="{% static 'ahp/css/app_style.css' %}">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
+    <script src="{% static 'ahp/lib/d3.v3.min.js' %}"></script>
+    <script src="{% static 'ahp/lib/dagre-d3.js' %}"></script>
+
 </head>
 
 {% verbatim angular %}
@@ -29,21 +32,22 @@
 <div class="menu-block">
 <ul class="nav nav-pills nav-stacked" ng-init="settab='1'" >
 
-    <li role="presentation" ng-click="settab='0'" ng-class="{active:settab=='0'}"><a href="#">Info</a></li>
+    <li role="presentation" ng-click="settab='0'" ng-class="{active:settab=='0'}"><a href="#">О программе</a></li>
     <li role="presentation" ng-click="settab='1'; tab.initHierarchy()" ng-class="{active:settab=='1'}"><a href="#">Иерарахия</a></li>
     <li role="presentation" ng-click="settab='2'; tab.initGroups()" ng-class="{active:settab=='2'}"><a href="#">Группы экспертов</a></li>
     <li role="presentation" ng-click="settab='3'; tab.initGroupHierarchyVotes()" ng-class="{active:settab=='3'}"><a href="#">Опросы</a></li>
-    <li role="presentation" ng-click="settab='4';" ng-class="{active:settab=='4'}"><a href="#">Расчет приоритетов</a></li>
+    <li role="presentation" ng-click="settab='4'; tab.initGlobalPriority()" ng-class="{active:settab=='4'}"><a href="#">Расчет приоритетов</a></li>
 
-    <li role="presentation" ng-click="settab='5'" ng-class="{active:settab=='5'}"><a href="#">Profile</a></li>
-    <li role="presentation" ng-click="settab='6'" ng-class="{active:settab=='6'}"><a href="#">Messages</a></li>
 </ul>
 </div>
 
+
+
 <div class="background-block">
 <div ng-show="settab=='1'" class="hierarchy">
-    <div class="container" ng-controller="hierarchyController" ng-init="init()" >
+    <div class="container" ng-controller="hierarchyController" ng-init="init()">
         <popup></popup>
+        <hierarchygraph></hierarchygraph>
         <div class="row work-block">
             <div class="title-block">
                 Цель
@@ -89,6 +93,7 @@
                 </div>
                 <button ng-click="addNode(level_order[1])" class="btn btn-new"><span class="glyphicon glyphicon-plus">новая альтернатива</span></button>
             </div>
+            <button ng-click="graphics='graph'" class="btn btn-graph btn-default">Просмотр иерархии</button>
         </div>
     </div>
 </div>
@@ -107,6 +112,9 @@
                 <div ng-repeat="(group_id, group) in group_hash" class="level-block">
                     <div class="small-title">
                         {{group.name}}
+                        <span class="user-status">
+                        статус голосования
+                        </span>
                         <button ng-click="editGroup(group_id)" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
                         <button ng-click="deletGroup(group_id)" class="btn btn-item"><span class="glyphicon glyphicon-remove"></span></button>
                         <button ng-click="settingsGroup(group_id)" class="btn btn-item">---</button>
@@ -184,6 +192,7 @@
 
             <div ng-controller="groupHierarchyController" class="row">
                 <popup></popup>
+                <hierarchygraphgroups></hierarchygraphgroups>
                 <div ng-show="settab=='3.1'">
                     <div class="col-md-6">
                         <div class="h3">Критерии:</div>
@@ -194,7 +203,7 @@
                                 </div>
                                 <div ng-show="level_nodes_list[level].length>0" ng-repeat="(node_key, node) in level_nodes_list[level]" class="list-group-item">
                                     <label>
-                                        <input type="checkbox" checklist-model="group_nodes_list[chosen_group]" checklist-value="node">
+                                        <input type="checkbox" checklist-model="group_nodes_list[chosen_group]" checklist-value="node" ng-disabled="groups_votes[chosen_group].hierarchy_email>0">
                                         {{node_hash[node].name}}
                                     </label>
 
@@ -205,34 +214,39 @@
 
                     <div class="col-md-6">
                         <div class="h3">Альтернативы:</div>
-                        <div class="list-group">
+                        <div class="list-group level-block">
                             <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" class="list-group-item">
                                 <label>
-                                <input type="checkbox" checklist-model="group_nodes_list[chosen_group]" checklist-value="node">
+                                <input type="checkbox" checklist-model="group_nodes_list[chosen_group]" checklist-value="node" ng-disabled="groups_votes[chosen_group].hierarchy_email>0">
                                 {{node_hash[node].name}}
                                 </label>
                             </div>
                         </div>
                     </div>
+                    <button ng-click="graphics='graph'" class="btn btn-graph btn-default">Просмотр иерархии</button>
                     <div class="button-group">
-                        <button ng-click="save(chosen_group)" class="btn btn-primary">Сохранить настройки для данной группы</button>
+                        <button ng-click="save(chosen_group)" class="btn btn-primary" ng-hide="groups_votes[chosen_group].hierarchy_email>0">Сохранить настройки для данной группы</button>
                         <div ng-show="save_nodes=='success'" class="alert alert-success">Настройки успешно сохранены</div>
                         <div ng-show="save_nodes=='error'" class="alert alert-danger">Ошибка при сохранении, повторите позже</div>
+                        <div ng-show="groups_votes[chosen_group].hierarchy_email>0" class="alert alert-danger">
+                            Вы не можете поменять настройки, так как уже выслали письмо для голосования с такими настройками
+                        </div>
                     </div>
                 </div>
 
                 <div ng-show="settab=='3.2'">
-                    <div ng-controller="groupHierarchyVotesController" >
+                    <div ng-controller="groupHierarchyVotesController">
+                        <hierarchygraphgroupsvotes></hierarchygraphgroupsvotes>
                         <div class="col-md-7">
                             <div class="h3">Критерии:</div>
                             <div class="list-group">
-                                <div ng-repeat="level in level_order" ng-if="$index > 1"class="level-block">
+                                <div ng-repeat="level in level_order" ng-if="$index > 1" class="level-block">
                                     <div class="small-title">
                                         {{level_hash[level].name}}
                                     </div>
                                     <div  ng-repeat="(node_key, node) in level_nodes_list[level]" ng-if="isForShow(chosen_group, node)" class="list-group-item">
                                         <label>
-                                            <input type="checkbox" checklist-model="group_nodes_for_comparison_list[chosen_group]" checklist-value="node">
+                                            <input type="checkbox" checklist-model="group_nodes_for_comparison_list[chosen_group]" checklist-value="node" ng-disabled="groups_votes[chosen_group].comparison_email>0">
                                             {{node_hash[node].name}}
                                             <span class="badge">{{group_nodes_count_list[chosen_group][node].count}}</span>
                                         </label>
@@ -243,25 +257,28 @@
 
                         <div class="col-md-5">
                             <div class="h3">Альтернативы:</div>
-                            <div class="list-group">
+                            <div class="list-group level-block">
                                 <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" ng-if="isForShow(chosen_group, node)" class="list-group-item">
                                     <label>
-                                        <input type="checkbox" checklist-model="group_nodes_for_comparison_list[chosen_group]" checklist-value="node">
+                                        <input type="checkbox" checklist-model="group_nodes_for_comparison_list[chosen_group]" checklist-value="node" ng-disabled="groups_votes[chosen_group].comparison_email>0">
                                         {{node_hash[node].name}}
                                         <span class="badge">{{group_nodes_count_list[chosen_group][node].count}}</span>
                                     </label>
                                 </div>
                             </div>
                         </div>
+                        <button ng-click="graphics='graph'" class="btn btn-graph btn-default">Просмотр иерархии</button>
                         <div class="button-group">
-                            <button ng-click="send(chosen_group)" class="btn btn-primary">Сохранить настройки для данной группы</button>
-                        <div ng-show="save_nodes_v=='success'" class="alert alert-success">Настройки успешно сохранены</div>
-                        <div ng-show="save_nodes_v=='error'" class="alert alert-danger">Ошибка при сохранении, повторите позже</div>
+                            <button ng-click="send(chosen_group)" class="btn btn-primary" ng-hide="groups_votes[chosen_group].comparison_email>0">Сохранить настройки для данной группы</button>
+                            <div ng-show="save_nodes_v=='success'" class="alert alert-success">Настройки успешно сохранены</div>
+                            <div ng-show="save_nodes_v=='error'" class="alert alert-danger">Ошибка при сохранении, повторите позже</div>
+                            <div ng-show="groups_votes[chosen_group].comparison_email>0" class="alert alert-danger">
+                                Вы не можете поменять настройки, так как уже выслали письмо для голосования с такими настройками
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
 
         </div>
     </div>
@@ -269,36 +286,54 @@
 
 
 <div ng-show="settab=='4'">
-    <div ng-controller="globalPriorityController" ng-init="init()" class="container work-block">
-
-        <div class="col-md-4">
-            <div ng-repeat="(group_key, group) in group_hash">
-                {{group.name}}
-                <div ng-show="group.count.for_comparison>0">
-                    <input type="checkbox" checklist-model="checked_group_list" checklist-value="group_key">
+    <div ng-controller="globalPriorityController" ng-init="init()" class="container priority">
+        <popup></popup>
+        <div class="double">
+            <div class="work-block">
+                <div class="title-block">Группы</div>
+                <div class="level-block">
+                    <div ng-repeat="(group_key, group) in group_hash" class="list-group-item">
+                        <div class="active-group">
+                            <input type="checkbox" checklist-model="checked_group_list" checklist-value="group_key" ng-disabled="!group.count.for_comparison>0">
+                            {{group.name}}
+                            <button ng-click="user_settings(group_key)" ng-disabled="!group.count.for_comparison>0" class="btn"><span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span></button>
+                        </div>
+                    </div>
                 </div>
+
+                <div class="sliders-priority-title">
+                    <label>
+                    <input type="checkbox" ng-model="show_priority" ng-disabled="checked_group_list.length<2">&nbsp;&nbsp; yчитывать приоритеты групп
+                    </label>
+                </div>
+                <div ng-show="show_priority" class="level-block">
+                    <div ng-repeat="group_key in checked_group_list" class="list-group-item">
+                        {{group_hash[group_key].name}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        {{group_hash[group_key].priority}} %
+                        <div ui-slider="slider.options"  ng-change="change(group_key)" min="0" max="100" ng-model="group_hash[group_key].priority"></div>
+                    </div>
+                </div>
+                <button ng-click="calculate()" ng-show="checked_group_list.length>0" class="btn btn-success btn-block">Расчитать глобальные приоритеты</button>
             </div>
 
-
-            <div ng-repeat="group_key in checked_group_list">
-                <div ui-slider="slider.options"  ng-change="change(group_key)" min="0" max="100" ng-model="group_hash[group_key].priority"></div>
-                {{group_hash[group_key].name}}
-                {{group_hash[group_key].priority}}
-                <div ng-show="group.count.for_comparison>0">можно голосовать</div>
+            <div class="work-block">
+                <div class="title-block">Альтернативы</div>
+                <div class="level-block">
+                    <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" class="list-group-item">
+                        {{node_hash[node].name}}
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: {{result[node]*100}}%;">
+                                {{Math.round(result[node]*1000)/10}}
+                            </div>
+                        </div>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    </div>
+                </div>
+                <button ng-click="calculate()" ng-show="calculated" class="btn btn-success btn-block">Анализ результатов</button>
             </div>
 
         </div>
-        <div class="col-md-8">
-            <div class="h3">Альтернативы:</div>
-
-            <div class="list-group">
-                <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" class="list-group-item">
-                    {{node_hash[node].name}}
-                    {{result[node]}}
-                </div>
-            </div>
-        </div>
-        <button ng-click="calculate()">Расчитать</button>
     </div>
 </div>
 </div>

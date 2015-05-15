@@ -41,7 +41,7 @@
                     <div class="pairwise_line">
                     {% for obj in line %}
                         <input {% ifequal  pairwise_obj.value forloop.counter0 %} checked="checked" {% endifequal %} id={{forloop.parentloop.parentloop.counter0}}_{{forloop.parentloop.counter0}}_{{forloop.counter0}} type='radio' name={{forloop.parentloop.counter0}} value={{forloop.counter0}}>
-                        <label for={{forloop.parentloop.parentloop.counter0}}_{{forloop.parentloop.counter0}}_{{forloop.counter0}} class="pairwise_val">{{obj.view}}</label>
+                        <label for={{forloop.parentloop.parentloop.counter0}}_{{forloop.parentloop.counter0}}_{{forloop.counter0}} class="pairwise_val">{{obj.view}}</label> <!--style="background-color:{{obj.color}}"-->
                     {% endfor %}
                     </div>
                 </div>
@@ -56,7 +56,7 @@
         <div class="pagination">
             <span class="step-links">
                 <span class="current">
-                    Page {{ bunches.number }} of {{ bunches.paginator.num_pages }}.
+                    {{ bunches.number }} из {{ bunches.paginator.num_pages }}
                 </span>
                 <div class="buttons">
                     {% if bunches.has_next %}

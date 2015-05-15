@@ -17,4 +17,7 @@
         .controller('tabController', tabController)
         .controller('globalPriorityController', globalPriorityController)
         .directive ('popup', popup)
+        .directive ('hierarchygraph', hierarchygraph)
+        .directive ('hierarchygraphgroups', hierarchygraphgroups)
+        .directive ('hierarchygraphgroupsvotes', hierarchygraphgroupsvotes)
 })();

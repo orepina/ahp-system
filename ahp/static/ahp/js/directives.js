@@ -11,23 +11,26 @@ function popup(ajaxFactory){
         controller: function($scope) {
             $scope.closePopup = function() {
                 $scope.check = '';
+                $scope.act_type='';
+                /*
                 if ($scope.act_type=='error'){
                     $scope.act_type=''
                 }
                 else {
                     $scope.init();
-                }
+                }*/
             };
 
             $scope.input_check = function() {
                 //if(entity_type=='level'||entity_type=='node'||entity_type=='alternative'||entity_type=='goal'||entity_type=='group'||entity_type=='user') {
+                if ($scope.act_type != 'add' && $scope.act_type != 'edit') return true;
                 if ($scope.name == '') {
                     $scope.check = 'error';
                     return false;
                 }
                 if ($scope.entity_type == 'level') {
                     for (var key in $scope.level_hash) {
-                        if ($scope.level_hash[key].name == $scope.name) {
+                        if ($scope.level_hash[key].name == $scope.name && $scope.level_id != key) {
                             $scope.check = 'level_exist';
                             return false;
                         }
@@ -35,7 +38,7 @@ function popup(ajaxFactory){
                 }
                 if ($scope.entity_type == 'alternative') {
                     for (var key in $scope.node_hash) {
-                        if ($scope.node_hash[key].name == $scope.name) {
+                        if ($scope.node_hash[key].name == $scope.name && $scope.node_id != key) {
                             $scope.check = 'alt_exist';
                             return false;
                         }
@@ -43,7 +46,7 @@ function popup(ajaxFactory){
                 }
                 if ($scope.entity_type == 'node') {
                     for (var key in $scope.node_hash) {
-                        if ($scope.node_hash[key].name == $scope.name) {
+                        if ($scope.node_hash[key].name == $scope.name && $scope.node_id != key) {
                             $scope.check = 'node_exist';
                             return false;
                         }
@@ -51,7 +54,7 @@ function popup(ajaxFactory){
                 }
                 if ($scope.entity_type == 'group') {
                     for (var key in $scope.group_hash) {
-                        if ($scope.group_hash[key].name == $scope.name) {
+                        if ($scope.group_hash[key].name == $scope.name && $scope.group_id != key) {
                             $scope.check = 'group_exist';
                             return false;
                         }
@@ -107,8 +110,20 @@ function popup(ajaxFactory){
             $scope.postEmail = function() {
                 var data = {act_type: $scope.act_type, user_id: $scope.user_id, group_id: $scope.group, name: $scope.name, description: $scope.description, email: $scope.email, text:'текст наверное понадобится'};
                 $scope.postToServer($scope.entity_type, data);
-                //на отправку сообщения анимация
             };
+
+            $scope.refresh_user = function() {
+                for (var i=0;i<$scope.user_list.length;i++) {
+                    if ($scope.user_list[i].id == $scope.user_id) {
+                        if ($scope.act_type == 'send_email_hierarchy') {
+                            $scope.user_list[i].hierarchy_form = 'email'
+                        }  else {
+                            $scope.user_list[i].comparison_form = 'email';
+                        }
+                    }
+                }
+                $scope.closePopup();
+            }
 
             $scope.postToServer = function(entity_type, data) {
                 if (entity_type=='email') {
@@ -130,6 +145,155 @@ function popup(ajaxFactory){
                         }
                     });
             }
+        }
+    }
+}
+
+function hierarchygraph(){
+    return {
+        restrict: 'E',
+        scope: false,
+        templateUrl: 'hierarchy_graph',
+        link: function (scope, element, attrs) {
+
+        var g = new dagreD3.graphlib.Graph()
+                .setGraph({})
+                .setDefaultEdgeLabel(function() { return {}; });
+
+        for (var id in scope.node_hash) {
+            if (scope.node_hash[id].name=='a1'){
+                g.setNode(id, { label: scope.node_hash[id].name, class: "aa" });
+            }
+            else {
+            g.setNode(id, { label: scope.node_hash[id].name, class: "other" });
+            }
+        };
+
+        g.nodes().forEach(function(v) {
+
+        });
+
+        for (var i=0; i<scope.edges_list.length; i++) {
+            g.setEdge(scope.edges_list[i].parent, scope.edges_list[i].node, {lineInterpolate: 'basis'});
+            console.log(scope.edges_list[i].parent,  scope.edges_list[i].node)
+        };
+
+
+        // Create the renderer
+        var render = new dagreD3.render();
+
+        // Set up an SVG group so that we can translate the final graph.
+        var svg = d3.select("svg"),
+                svgGroup = svg.append("g");
+
+        // Run the renderer. This is what draws the final graph.
+        render(d3.select("svg g"), g);
+
+        // Center the graph
+        var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
+        svgGroup.attr("transform", "translate(" + xCenterOffset + ", 20)");
+
+        }
+    }
+}
+
+function hierarchygraphgroups(){
+    return {
+        restrict: 'E',
+        scope: false,
+        templateUrl: 'hierarchy_graph',
+        link: function (scope, element, attrs) {
+
+        var g = new dagreD3.graphlib.Graph()
+                .setGraph({})
+                .setDefaultEdgeLabel(function() { return {}; });
+
+        for (var id in scope.node_hash) {
+            if (scope.group_nodes_list[scope.chosen_group].indexOf(id)!=-1) {
+                g.setNode(id, { label: scope.node_hash[id].name, class: "checked" });
+            }
+            else {
+                g.setNode(id, { label: scope.node_hash[id].name, class: "unchecked" });
+            }
+        };
+
+        g.nodes().forEach(function(v) {
+        });
+
+        for (var i=0; i<scope.edges_list.length; i++) {
+            if (scope.group_nodes_list[scope.chosen_group].indexOf(scope.edges_list[i].parent)!=-1 && scope.group_nodes_list[scope.chosen_group].indexOf(scope.edges_list[i].node)!=-1) {
+                g.setEdge(scope.edges_list[i].parent, scope.edges_list[i].node, {lineInterpolate: 'basis'});
+                // class??
+            }
+            else {
+            }
+        };
+
+        // Create the renderer
+        var render = new dagreD3.render();
+
+        // Set up an SVG group so that we can translate the final graph.
+        var svg = d3.select("svg"),
+                svgGroup = svg.append("g");
+
+        // Run the renderer. This is what draws the final graph.
+        render(d3.select("svg g"), g);
+
+        // Center the graph
+        var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
+        svgGroup.attr("transform", "translate(" + xCenterOffset + ", 20)");
+
+        }
+    }
+}
+
+function hierarchygraphgroupsvotes(){
+    return {
+        restrict: 'E',
+        scope: false,
+        templateUrl: 'hierarchy_graph',
+        link: function (scope, element, attrs) {
+
+        var g = new dagreD3.graphlib.Graph()
+                .setGraph({})
+                .setDefaultEdgeLabel(function() { return {}; });
+
+        for (var id in scope.node_hash) {
+            if (scope.group_nodes_for_comparison_list[scope.chosen_group].indexOf(id)!=-1) {
+                g.setNode(id, { label: scope.node_hash[id].name, class: "checked" });
+            }
+            else {
+                g.setNode(id, { label: scope.node_hash[id].name, class: "unchecked" });
+            }
+        };
+
+        g.nodes().forEach(function(v) {
+
+        });
+
+        for (var i=0; i<scope.edges_list.length; i++) {
+            if (scope.group_nodes_for_comparison_list[scope.chosen_group].indexOf(scope.edges_list[i].parent)!=-1 && scope.group_nodes_for_comparison_list[scope.chosen_group].indexOf(scope.edges_list[i].node)!=-1) {
+                g.setEdge(scope.edges_list[i].parent, scope.edges_list[i].node, {lineInterpolate: 'basis'});
+                // class??
+            }
+            else {
+            }
+        };
+
+        // Create the renderer
+        var render = new dagreD3.render();
+
+        // Set up an SVG group so that we can translate the final graph.
+        var svg = d3.select("svg"),
+                svgGroup = svg.append("g");
+
+        // Run the renderer. This is what draws the final graph.
+        render(d3.select("svg g"), g);
+
+        // Center the graph
+        var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
+        svgGroup.attr("transform", "translate(" + xCenterOffset + ", 20)");
+
         }
     }
 }

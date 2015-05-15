@@ -25,7 +25,7 @@ function updateFactory() {
     return {
 
         updateNodeHash: function(data) {
-            var temp = JSON.parse(data).concat(),
+            var temp = JSON.parse(data),
                 node_hash = {};
             for (var i=0; i<temp.length; i++){
                 node_hash[temp[i].pk] = {name: temp[i].fields.name, description: temp[i].fields.description};
@@ -34,7 +34,7 @@ function updateFactory() {
         },
 
         updateLevelHash: function(data) {
-            var temp = JSON.parse(data).concat(),
+            var temp = JSON.parse(data),
                 level_hash = {};
             for (var i=0; i<temp.length; i++){
                 level_hash[temp[i].pk] = {name: temp[i].fields.name, description: temp[i].fields.description};
@@ -43,7 +43,7 @@ function updateFactory() {
         },
 
         updateLevelOrder: function(data) {
-            var temp = JSON.parse(data).concat(),
+            var temp = JSON.parse(data),
                 order,
                 level_order = [];
             for (var i=0; i<temp.length; i++){
@@ -54,7 +54,7 @@ function updateFactory() {
         },
 
         updateLevelList: function(data) {
-            var temp = JSON.parse(data).concat(),
+            var temp = JSON.parse(data),
                 level_nodes_list = {};
             for (var i=0; i<temp.length; i++){
                 level_nodes_list[temp[i].fields.level] = level_nodes_list[temp[i].fields.level] || [];
@@ -64,7 +64,7 @@ function updateFactory() {
         },
 
         updateAdjacencyList: function(data) {
-            var temp = JSON.parse(data).concat(),
+            var temp = JSON.parse(data),
                 adjacency_list = {};
             for (var i=0; i<temp.length; i++){
                 adjacency_list[temp[i].fields.parent] = adjacency_list[temp[i].fields.parent] || [];
@@ -73,8 +73,18 @@ function updateFactory() {
             return adjacency_list
         },
 
+        updateEdgesList: function(data) {
+            var temp = JSON.parse(data),
+                edges_list = [];
+            for (var i=0; i<temp.length; i++){
+                if (temp[i].fields.parent==null) continue;
+                edges_list.push({parent: temp[i].fields.parent, node: temp[i].fields.node})
+            }
+            return edges_list
+        },
+
         updateGroupHash: function(data) {
-            var temp = JSON.parse(data.groups).concat(),
+            var temp = JSON.parse(data.groups),
                 temp_count = data.groups_count,
                 group_hash = {};
             for (var i=0; i<temp.length; i++){
@@ -84,7 +94,7 @@ function updateFactory() {
         },
 
         updateGroupPriority: function(data) {
-            var temp = JSON.parse(data.groups).concat(),
+            var temp = JSON.parse(data.groups),
                 temp_count = data.groups_count,
                 group_priority = {};
             for (var i=0; i<temp.length; i++){
@@ -93,8 +103,18 @@ function updateFactory() {
             return group_priority;
         },
 
+        updateGroupVotes: function(data) {
+            var temp = data,
+                group_votes = {};
+            console.log(temp)
+            for (var i=0; i<temp.length; i++){
+                group_votes[temp[i].group] = {hierarchy_email: temp[i].hierarchy_email, comparison_email: temp[i].comparison_email};
+            }
+            return group_votes;
+        },
+
         updateUserHash : function(data) {
-            var temp = JSON.parse(data).concat(),
+            var temp = JSON.parse(data),
                 user_hash = {};
             for (var i=0; i<temp.length; i++){
                 user_hash[temp[i].pk] = {name: temp[i].fields.name, description: temp[i].fields.description, group: temp[i].fields.group, email: temp[i].fields.email, hierarchy_form: temp[i].fields.hierarchy_form, comparison_form: temp[i].fields.comparison_form};
@@ -103,7 +123,7 @@ function updateFactory() {
         },
 
         updateUserList : function(data) {
-            var temp = JSON.parse(data).concat(),
+            var temp = JSON.parse(data),
                 user_list = [];
             for (var i=0; i<temp.length; i++){
                 user_list.push({id: temp[i].pk, name: temp[i].fields.name, description: temp[i].fields.description, group: temp[i].fields.group, email: temp[i].fields.email, hierarchy_form: temp[i].fields.hierarchy_form, comparison_form: temp[i].fields.comparison_form});
@@ -111,8 +131,21 @@ function updateFactory() {
             return user_list;
         },
 
+        updateUserConfidenceList : function(data) {
+            var temp = JSON.parse(data),
+                user_list = [],
+                user_checked_list = [];
+            for (var i=0; i<temp.length; i++){
+                user_list.push({id: temp[i].pk, name: temp[i].fields.name, description: temp[i].fields.description, group: temp[i].fields.group, email: temp[i].fields.email, hierarchy_form: temp[i].fields.hierarchy_form, comparison_form: temp[i].fields.comparison_form, avt_count: temp[i].fields.confidence1, confidence: temp[i].fields.confidence2});
+                if (temp[i].fields.comparison_form=='check') {
+                    user_checked_list.push(temp[i].pk);
+                }
+            }
+            return {info: user_list, list: user_checked_list};
+        },
+
         updateGroupNodesList: function(data) {
-            var temp = JSON.parse(data).concat(),
+            var temp = JSON.parse(data),
                 group_nodes_list = {};
             for (var i=0; i<temp.length; i++){
                 group_nodes_list[temp[i].fields.group] = group_nodes_list[temp[i].fields.group] || [];
@@ -122,7 +155,7 @@ function updateFactory() {
         },
 
         updateGroupNodesVotesList: function(data) {
-            var temp = JSON.parse(data).concat(),
+            var temp = JSON.parse(data),
                 group_nodes_count_list = {},
                 group_nodes_for_comparison_list =  {};
             for (var i=0; i<temp.length; i++){
@@ -135,7 +168,7 @@ function updateFactory() {
         },
 
         updateGroupQuestionList: function(data) {
-            var temp = JSON.parse(data).concat(),
+            var temp = JSON.parse(data),
                 group_question_list = {},
                 question_hash = {};
             for (var i=0; i<temp.length; i++){
@@ -148,7 +181,7 @@ function updateFactory() {
         },
 
         updateQuestionList: function(data) {
-            var temp = JSON.parse(data).concat(),
+            var temp = JSON.parse(data),
                 id_r = 0,
                 questions = [];
             for (var i=0; i<temp.length; i++){
