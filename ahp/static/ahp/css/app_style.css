@@ -101,6 +101,17 @@ div.level-block {
     box-shadow: 0 6px 4px -4px rgba(0, 0, 0, .2);
 }
 
+div.answer-block {
+    margin: 0 0 8px 0;
+    box-shadow: 0 6px 4px -4px rgba(0, 0, 0, .2);
+    background-color: #D2D2D1;
+    padding: 0px 10px;
+}
+
+div.answer-block h4 {
+    text-align: center;
+}
+
 .dropdown > .btn {
     border: 0px solid transparent !important;
     border-radius: 0 !important;
@@ -191,30 +202,29 @@ label{
 
 #popup-bg {
     position: absolute;
-    left: 0;
+    left: -200px;
     right: 0;
     top: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0,0,0,0.9);
     z-index: 500;
     min-height: 100%;
 }
 
 #popup {
-    top: 10%;
     left: 50%;
     margin-left: -300px;
     width: 600px;
-    padding: 20px 20px;
-    background: white;
-    position: absolute;
+    padding: 20px;
+    background: none repeat scroll 0% 0% #FFF;
+    position: relative;
+    margin-top: 50px;
 }
 
 #popup-graph{
     top: 10%;
     left: 50%;
     margin-left: -400px;
-    width: 800px;
+
     padding: 20px 20px;
     background: white;
     position: absolute;

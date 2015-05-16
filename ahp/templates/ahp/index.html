@@ -22,7 +22,7 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
     <script src="{% static 'ahp/lib/d3.v3.min.js' %}"></script>
-    <script src="{% static 'ahp/lib/dagre-d3.js' %}"></script>
+    <script src="http://cpettitt.github.io/project/dagre-d3/v0.3.0/dagre-d3.js"></script>
 
 </head>
 
@@ -47,7 +47,7 @@
 <div ng-show="settab=='1'" class="hierarchy">
     <div class="container" ng-controller="hierarchyController" ng-init="init()">
         <popup></popup>
-        <hierarchygraph></hierarchygraph>
+        <!--<hierarchygraph ></hierarchygraph>-->
         <div class="row work-block">
             <div class="title-block">
                 Цель
@@ -131,12 +131,12 @@
                                 <span ng-show="group.count['for_hierarchy'] > 0">
                                     <button ng-show="user.hierarchy_form == ''" ng-click="sendEmailHierarchy(user, group_id)" class="btn btn-primary"><span class="glyphicon glyphicon-envelope"></span></button>
                                     <span ng-show="user.hierarchy_form == 'email'" class="label label-info"><span class="glyphicon glyphicon-time"></span></span>
-                                    <span ng-show="user.hierarchy_form == 'check'" class="label label-success"><span class="glyphicon glyphicon-ok"></span></span>
+                                    <button ng-show="user.hierarchy_form == 'check'" class="btn btn-success" ng-click="showUserAnswerHierarchy(user)"><span class="glyphicon glyphicon-ok"></span></button>
 
                                 <span ng ng-show="group.count['for_comparison'] > 0">
                                         <button ng-show="user.comparison_form == ''" ng-click="sendEmailComparison(user, group_id)" class="btn btn-primary"><span class="glyphicon glyphicon-envelope"></span></button>
                                         <span ng-show="user.comparison_form == 'email'" class="label label-info"><span class="glyphicon glyphicon-time"></span></span>
-                                        <span ng-show="user.comparison_form == 'check'" class="label label-success"><span class="glyphicon glyphicon-ok"></span></span>
+                                        <button ng-show="user.comparison_form == 'check'" class="btn btn-success" ng-click="showUserAnswerComparison(user)"><span class="glyphicon glyphicon-ok"></span></button>
 
                                 </span>
                                 <span ng ng-hide="group.count['for_comparison'] > 0" class="label label-danger">
@@ -192,7 +192,7 @@
 
             <div ng-controller="groupHierarchyController" class="row">
                 <popup></popup>
-                <hierarchygraphgroups></hierarchygraphgroups>
+               <!--<hierarchygraphgroups></hierarchygraphgroups>-->
                 <div ng-show="settab=='3.1'">
                     <div class="col-md-6">
                         <div class="h3">Критерии:</div>
@@ -236,8 +236,8 @@
 
                 <div ng-show="settab=='3.2'">
                     <div ng-controller="groupHierarchyVotesController">
-                        <hierarchygraphgroupsvotes></hierarchygraphgroupsvotes>
-                        <div class="col-md-7">
+                        <!--<hierarchygraphgroupsvotes></hierarchygraphgroupsvotes>-->
+                        <div class="col-md-6">
                             <div class="h3">Критерии:</div>
                             <div class="list-group">
                                 <div ng-repeat="level in level_order" ng-if="$index > 1" class="level-block">
@@ -255,7 +255,7 @@
                             </div>
                         </div>
 
-                        <div class="col-md-5">
+                        <div class="col-md-6">
                             <div class="h3">Альтернативы:</div>
                             <div class="list-group level-block">
                                 <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" ng-if="isForShow(chosen_group, node)" class="list-group-item">
@@ -303,10 +303,10 @@
 
                 <div class="sliders-priority-title">
                     <label>
-                    <input type="checkbox" ng-model="show_priority" ng-disabled="checked_group_list.length<2">&nbsp;&nbsp; yчитывать приоритеты групп
+                    <input type="checkbox" ng-model="show_priority" ng-disabled="checked_group_list.length<2" ng-checked="checked_group_list.length>1 && show_priority">&nbsp;&nbsp; yчитывать приоритеты групп
                     </label>
                 </div>
-                <div ng-show="show_priority" class="level-block">
+                <div ng-show="show_priority && checked_group_list.length>1" class="level-block">
                     <div ng-repeat="group_key in checked_group_list" class="list-group-item">
                         {{group_hash[group_key].name}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                         {{group_hash[group_key].priority}} %

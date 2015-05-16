@@ -26,6 +26,8 @@ urlpatterns = patterns('',
     url(r'^popup/$', login_required(views.popup), name='popup'),
     url(r'^hierarchy_graph/$', login_required(views.hierarchy_graph), name='hierarchy_graph'),
     url(r'^groups_votes/$', login_required(views.groups_votes), name='groups_votes'),
+    url(r'^users_answer_hierarchy/$', login_required(views.users_answer_hierarchy), name='users_answer_hierarchy'),
+    url(r'^users_answer_comparison/$', login_required(views.users_answer_comparison), name='users_answer_comparison'),
 
     url(r'^login/$', 'django.contrib.auth.views.login', {'template_name': 'ahp/login.html'}),
 

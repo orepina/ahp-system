@@ -83,6 +83,20 @@ function updateFactory() {
             return edges_list
         },
 
+        updateUsersAnswerHierarchy: function(data) {
+            var temp = JSON.parse(data.user_nodes),
+                user_nodes = {};
+            for (var i=0; i<temp.length; i++){
+                user_nodes[temp[i].fields.user] = user_nodes[temp[i].fields.user] || [];
+                user_nodes[temp[i].fields.user].push(temp[i].fields.node);
+            }
+            return user_nodes
+        },
+
+        updateUsersAnswerComparison: function(data) {
+            return data.user_comparison
+        },
+
         updateGroupHash: function(data) {
             var temp = JSON.parse(data.groups),
                 temp_count = data.groups_count,

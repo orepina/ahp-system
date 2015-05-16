@@ -95,7 +95,7 @@ def form_for_participant(request, hash_user_id):
                     node = Node.objects.get(pk=node_id)
                     user_nodes = UserNodes.objects.create(user=user, node=node)
                     group_nodes = GroupNodes.objects.get(group=user_group, node=node)
-                    group_nodes.type = 'user_choice'
+                    #group_nodes.type = 'user_choice'
                     group_nodes.count = group_nodes.count+1
                     group_nodes.save()
         user.hierarchy_form = 'check'
@@ -150,7 +150,7 @@ def level(request):
 
 
 def edge_consist(level):
-    parent_nodes, children_nodes = level_edges_nodes(level)
+    parent_nodes, children_nodes, l_child = level_edges_nodes(level)
     for parent_node in parent_nodes:
         for child_node in children_nodes:
             Edge.objects.create(node=child_node.node, parent=parent_node.node, level=level)
@@ -171,7 +171,7 @@ def node(request):
     name = data['name']
     description = data['description']
     level = Level.objects.get(pk=level_id)
-    parent_nodes, children_nodes = level_edges_nodes(level)
+    parent_nodes, children_nodes, l_child = level_edges_nodes(level)
 
     if data['act_type'] == 'add':
         node = Node.objects.create(name=name, description=description)
@@ -179,7 +179,11 @@ def node(request):
         for parent_node in parent_nodes:
             Edge.objects.create(node=node, parent=parent_node.node, level=level)
         for child_node in children_nodes:
-            Edge.objects.create(node=child_node.node, parent=node, level=level)
+            Edge.objects.create(node=child_node.node, parent=node, level=l_child)
+        if LevelNodes.objects.filter(level=level).count()==1:
+            for parent_node in parent_nodes:
+                for child_node in children_nodes:
+                    Edge.objects.filter(node=child_node.node, parent=parent_node.node).delete()
     #пока что редактировани только инфы(без перемещений в другие уровни)
     if data['act_type'] == 'edit':
         node = Node.objects.get(pk=node_id)
@@ -192,6 +196,10 @@ def node(request):
         Edge.objects.filter(node=node).delete()
         Edge.objects.filter(parent=node).delete()
         node.delete()
+        if LevelNodes.objects.filter(level=level).count()==0:
+            for parent_node in parent_nodes:
+                for child_node in children_nodes:
+                    Edge.objects.create(node=child_node.node, parent=parent_node.node, level=l_child)
     return HttpResponse('')
 
 
@@ -217,9 +225,7 @@ def level_edges_nodes(level):
         l_child = Level.objects.get(order=level.order+1)
     parent_nodes = LevelNodes.objects.filter(level=l_parent)
     children_nodes = LevelNodes.objects.filter(level=l_child)
-    print >> sys.stderr, parent_nodes
-    print >> sys.stderr, children_nodes
-    return parent_nodes, children_nodes
+    return parent_nodes, children_nodes, l_child
 
 
 def order_consist(order_of_modified):
@@ -266,6 +272,45 @@ def group_nodes_list(request):
     return HttpResponse(json.dumps({
         'group_nodes': groups_nodes
     }), content_type="application/json")
+
+
+def users_answer_hierarchy(request):
+    user_nodes = serializers.serialize('json', UserNodes.objects.all())
+    return HttpResponse(json.dumps({
+        'user_nodes': user_nodes
+    }), content_type="application/json")
+
+
+def users_answer_comparison(request):
+    user_comparison = {}
+    users = User.objects.filter(comparison_form='check')
+    for user in users:
+        user_comparison[user.pk] = create_user_answer_comparison(user);
+    return HttpResponse(json.dumps({
+        'user_comparison': user_comparison
+    }), content_type="application/json")
+
+
+def create_user_answer_comparison(user):
+    answer = []
+    user_nodes = GroupNodes.objects.values_list('node', flat=True).filter(type='for comparison form', group=user.group)
+    goal = LevelNodes.objects.get(level=Level.objects.get(name='goal')).node
+    edges = Edge.objects.filter(parent=goal, node__in=set(user_nodes))
+    while len(edges.values_list('node', flat=True))>0:
+        parent_edges = set(edges.values_list('parent', flat=True))
+        for parent in parent_edges:
+            answer_obj = {}
+            answer_obj['parent'] = parent
+            answer_obj['nodes'] = []
+            bunch_edges = edges.filter(parent=parent)
+            for edge in bunch_edges:
+                answer_node = {}
+                answer_node['node'] = edge.node.pk
+                answer_node['weight'] = Weight.objects.get(user=user, edge=edge).weight
+                answer_obj['nodes'].append(answer_node)
+            answer.append(answer_obj)
+        edges = Edge.objects.filter(node__in=set(user_nodes), parent__in=set(edges.values_list('node', flat=True)))
+    return answer
 
 
 #TODO делать ли отдельно для каждой группы?
@@ -660,8 +705,8 @@ def global_priority_calculation(request):
         group_sum = group_users.aggregate(Sum('confidence2'))
         for group_user in group_users:
             #print >> sys.stderr, 'group_sum  ', (float(group['priority'])/float(100)) * (float(group_user.confidence2)/float(group_sum['confidence2__sum']))
-            #group_priority = float(group['priority'])/float((100*len(group_users))
-            group_priority = (float(group['priority'])/float(100)) * (float(group_user.confidence2)/float(group_sum['confidence2__sum']))
+            #group_priority = float(group['priority'])/float((100*len(group_users)))
+            #group_priority = (float(group['priority'])/float(100)) * (float(group_user.confidence2)/float(group_sum['confidence2__sum']))
             users.append({'id': group_user, 'group_priority': float(group['priority'])/float((100*len(group_users)))})
         nodes_list.extend(group_nodes.values_list('node', flat=True))
     nodes = list(set(nodes_list))
@@ -744,13 +789,13 @@ def create_weigth_Matrix(edges, users):
     Matrix =  numpy.ones((len(nodes), len(parents)), "f")
     for index_node, node in enumerate(nodes):
         for index_parent, parent in enumerate(parents):
-            edge = edges.get(node=node,parent=parent)
+            edge = edges.get(node=node, parent=parent)
             for user in users:
                 try:
                     weight = pow(Weight.objects.get(edge=edge, user=user['id']).weight, user['group_priority'])
                 except Weight.DoesNotExist:
                     #weight = 1.0/len(nodes)
-                    weight = 0
+                    weight = pow(0.001, user['group_priority'])
                 #print >> sys.stderr,'[index_node][index_parent]    ', index_node, '  ',index_parent
                 #print >> sys.stderr,' weight    ', weight
                 Matrix[index_node][index_parent] = Matrix[index_node][index_parent]* weight

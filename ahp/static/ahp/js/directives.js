@@ -155,44 +155,42 @@ function hierarchygraph(){
         scope: false,
         templateUrl: 'hierarchy_graph',
         link: function (scope, element, attrs) {
+            scope.$watchGroup(['node_hash', 'edges_list'], function(newValue, oldValue) {
 
-        var g = new dagreD3.graphlib.Graph()
-                .setGraph({})
-                .setDefaultEdgeLabel(function() { return {}; });
+                node_hash = newValue[0];
+                edges_list = newValue[1];
 
-        for (var id in scope.node_hash) {
-            if (scope.node_hash[id].name=='a1'){
-                g.setNode(id, { label: scope.node_hash[id].name, class: "aa" });
-            }
-            else {
-            g.setNode(id, { label: scope.node_hash[id].name, class: "other" });
-            }
-        };
+                 var g = new dagreD3.graphlib.Graph()
+                        .setGraph({})
+                        .setDefaultEdgeLabel(function() { return {}; });
 
-        g.nodes().forEach(function(v) {
+                for (var id in node_hash) {
+                    g.setNode(id, { label: node_hash[id].name, class: "" });
+                };
 
-        });
+                g.nodes().forEach(function(v) {
+                });
 
-        for (var i=0; i<scope.edges_list.length; i++) {
-            g.setEdge(scope.edges_list[i].parent, scope.edges_list[i].node, {lineInterpolate: 'basis'});
-            console.log(scope.edges_list[i].parent,  scope.edges_list[i].node)
-        };
+                for (var i=0; i<edges_list.length; i++) {
+                    g.setEdge(edges_list[i].parent, edges_list[i].node);
+                };
 
+                // Create the renderer
+                var render = new dagreD3.render();
 
-        // Create the renderer
-        var render = new dagreD3.render();
+                // Set up an SVG group so that we can translate the final graph.
+                var svg = d3.select("svg"),
+                        svgGroup = svg.append("g");
 
-        // Set up an SVG group so that we can translate the final graph.
-        var svg = d3.select("svg"),
-                svgGroup = svg.append("g");
+                // Run the renderer. This is what draws the final graph.
+                render(d3.select("svg g"), g);
 
-        // Run the renderer. This is what draws the final graph.
-        render(d3.select("svg g"), g);
-
-        // Center the graph
-        var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
-        svgGroup.attr("transform", "translate(" + xCenterOffset + ", 20)");
-
+                // Center the graph
+                console.log(svg.attr("width"))
+                console.log(svg.attr(g.graph().width))
+                var xCenterOffset = (svg.attr("width")) / 2;
+                svgGroup.attr("transform", "translate(" + xCenterOffset + ", 20)");
+            }, true)
         }
     }
 }
@@ -200,29 +198,33 @@ function hierarchygraph(){
 function hierarchygraphgroups(){
     return {
         restrict: 'E',
-        scope: false,
         templateUrl: 'hierarchy_graph',
         link: function (scope, element, attrs) {
+         scope.$watchGroup(['node_hash', 'edges_list', 'group_nodes_list', 'chosen_group'], function(newValue, oldValue) {
+            node_hash  = newValue[0]
+            edges_list = newValue[1]
+            group_nodes_list = newValue[2]
+            chosen_group = newValue[3]
 
         var g = new dagreD3.graphlib.Graph()
                 .setGraph({})
                 .setDefaultEdgeLabel(function() { return {}; });
 
-        for (var id in scope.node_hash) {
-            if (scope.group_nodes_list[scope.chosen_group].indexOf(id)!=-1) {
-                g.setNode(id, { label: scope.node_hash[id].name, class: "checked" });
+        for (var id in node_hash) {
+            if (group_nodes_list[chosen_group].indexOf(id)!=-1) {
+                g.setNode(id, { label: node_hash[id].name, class: "checked" });
             }
             else {
-                g.setNode(id, { label: scope.node_hash[id].name, class: "unchecked" });
+                g.setNode(id, { label: node_hash[id].name, class: "unchecked" });
             }
         };
 
         g.nodes().forEach(function(v) {
         });
 
-        for (var i=0; i<scope.edges_list.length; i++) {
-            if (scope.group_nodes_list[scope.chosen_group].indexOf(scope.edges_list[i].parent)!=-1 && scope.group_nodes_list[scope.chosen_group].indexOf(scope.edges_list[i].node)!=-1) {
-                g.setEdge(scope.edges_list[i].parent, scope.edges_list[i].node, {lineInterpolate: 'basis'});
+        for (var i=0; i<edges_list.length; i++) {
+            if (group_nodes_list[chosen_group].indexOf(edges_list[i].parent)!=-1 && group_nodes_list[chosen_group].indexOf(edges_list[i].node)!=-1) {
+                g.setEdge(edges_list[i].parent, edges_list[i].node, {lineInterpolate: 'basis'});
                 // class??
             }
             else {
@@ -242,8 +244,7 @@ function hierarchygraphgroups(){
         // Center the graph
         var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
         svgGroup.attr("transform", "translate(" + xCenterOffset + ", 20)");
-
-        }
+        }, true)}
     }
 }
 

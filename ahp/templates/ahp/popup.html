@@ -216,6 +216,48 @@
         </div>
 
 
+        <div ng-show="entity_type=='answer_hierarchy'" >
+            <div>
+                <div class="h3">Критерии:</div>
+                <div class="list-group">
+                    <div ng-repeat="level in level_order" ng-if="$index > 1" class="level-block">
+                        <div class="small-title">
+                            {{level_hash[level].name}}
+                        </div>
+                        <div  ng-repeat="(node_key, node) in level_nodes_list[level]" ng-if="users_answer_hierarchy[user_id].indexOf(node)>-1" class="list-group-item">
+                            {{node_hash[node].name}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="h3">Альтернативы:</div>
+                <div class="list-group level-block">
+                    <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]"  ng-if="users_answer_hierarchy[user_id].indexOf(node)>-1" class="list-group-item">
+                        {{node_hash[node].name}}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+         <div ng-show="entity_type=='answer_comparison'" >
+             <div ng-repeat="(bunch_key, bunch) in users_answer_comparison[user_id]" class="answer-block">
+                 <br>
+                 <h4>{{node_hash[bunch.parent].name}}</h4>
+                 <div ng-repeat="(bunch_key, node) in bunch.nodes">
+                     &nbsp;&nbsp;&nbsp;{{node_hash[node.node].name}}
+                     <div class="progress">
+                            <div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: {{node.weight*100}}%;">
+                                {{Math.round(node.weight*1000)/10}}%
+                            </div>
+                     </div>
+                 </div>
+                 <br>
+
+             </div>
+         </div>
+
     </form>
 </div>
 {% endverbatim angular %}
