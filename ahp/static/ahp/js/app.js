@@ -4,7 +4,7 @@
 
 (function() {
     angular
-        .module('app',['components', 'checklist-model','ui.slider'])
+        .module('app',['components', 'checklist-model','ui.slider','n3-line-chart'])
         .factory('ajaxFactory', ajaxFactory)
         .factory('updateFactory', updateFactory)
         .controller('hierarchyController', hierarchyController)

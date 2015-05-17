@@ -108,7 +108,7 @@ function popup(ajaxFactory){
             };
 
             $scope.postEmail = function() {
-                var data = {act_type: $scope.act_type, user_id: $scope.user_id, group_id: $scope.group, name: $scope.name, description: $scope.description, email: $scope.email, text:'текст наверное понадобится'};
+                var data = {act_type: $scope.act_type, user_id: $scope.user_id, group_id: $scope.group, name: $scope.name, description: $scope.description, email: $scope.email, text: $scope.text};
                 $scope.postToServer($scope.entity_type, data);
             };
 
@@ -127,7 +127,7 @@ function popup(ajaxFactory){
 
             $scope.postToServer = function(entity_type, data) {
                 if (entity_type=='email') {
-                    console.log('email_success')
+                    $scope.check='load_email'
                 }
                 ajaxFactory.postRequest(entity_type, data)
                     .success(function(data, status, headers, config) {
@@ -152,7 +152,6 @@ function popup(ajaxFactory){
 function hierarchygraph(){
     return {
         restrict: 'E',
-        scope: false,
         templateUrl: 'hierarchy_graph',
         link: function (scope, element, attrs) {
             scope.$watchGroup(['node_hash', 'edges_list'], function(newValue, oldValue) {
@@ -172,7 +171,7 @@ function hierarchygraph(){
                 });
 
                 for (var i=0; i<edges_list.length; i++) {
-                    g.setEdge(edges_list[i].parent, edges_list[i].node);
+                    g.setEdge(edges_list[i].parent, edges_list[i].node, {lineInterpolate: 'basis'});
                 };
 
                 // Create the renderer
@@ -186,8 +185,6 @@ function hierarchygraph(){
                 render(d3.select("svg g"), g);
 
                 // Center the graph
-                console.log(svg.attr("width"))
-                console.log(svg.attr(g.graph().width))
                 var xCenterOffset = (svg.attr("width")) / 2;
                 svgGroup.attr("transform", "translate(" + xCenterOffset + ", 20)");
             }, true)
@@ -243,7 +240,7 @@ function hierarchygraphgroups(){
 
         // Center the graph
         var xCenterOffset = (svg.attr("width") - g.graph().width) / 2;
-        svgGroup.attr("transform", "translate(" + xCenterOffset + ", 20)");
+        svgGroup.attr("transform", "translate(" +"20" + ", 20)");
         }, true)}
     }
 }

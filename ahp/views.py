@@ -153,7 +153,7 @@ def edge_consist(level):
     parent_nodes, children_nodes, l_child = level_edges_nodes(level)
     for parent_node in parent_nodes:
         for child_node in children_nodes:
-            Edge.objects.create(node=child_node.node, parent=parent_node.node, level=level)
+            Edge.objects.create(node=child_node.node, parent=parent_node.node, level=l_child)
     Edge.objects.filter(level=level).delete()
 
 

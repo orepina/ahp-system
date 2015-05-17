@@ -179,6 +179,8 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
     };
 
     $scope.init = function() {
+        $scope.initialisation = false;
+        $scope.graphics = '';
         $scope.edges_list = [];
         $scope.group_nodes_list = {};
         $scope.adjacency_list = {};
@@ -189,8 +191,8 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
         $scope.message = '';
         $scope.act_type = '';
         $scope.save_nodes = '';
-        $scope.graphics = '';
         $scope.update();
+
     };
 
     $scope.update = function() {
@@ -202,6 +204,7 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
                 $scope.level_hash = updateFactory.updateLevelHash(data.levels);
                 $scope.level_order = updateFactory.updateLevelOrder(data.levels);
                 $scope.level_nodes_list = updateFactory.updateLevelList(data.level_nodes);
+                $scope.initialisation = true;
             })
             .error(function(data, status, headers, config){});
         ajaxFactory.getRequest('group_nodes_list', '', '')
@@ -329,6 +332,7 @@ function groupsController( $scope, ajaxFactory, updateFactory  ) {
         $scope.user_hash = {};
         $scope.user_list = [];
         $scope.users_answer_hierarchy = {};
+        $scope.text = ''
         $scope.update();
     };
 
@@ -428,7 +432,12 @@ function groupsController( $scope, ajaxFactory, updateFactory  ) {
         $scope.email = user.email;
         $scope.user_id = user.id;
         $scope.group = group_id;
+        $scope.text = 'Здравствуйте, '+user.name+'!. Вы приглашены для участия в голосовании по проблеме '+$scope.node_hash[$scope.level_nodes_list[$scope.level_order[0]][0]].name+'. По ссылке Вы можете перейти к первому этапу голосования. Через несколько дней Вам придет письмо с приглашением к участию во втором этапе голосования.'
+    //'Здравствуйте, '+user.name+'!.Нас инетересует ваше мнение по проблеме'+{{$scope.node_hash[$scope.level_nodes_list[$scope.level_order[0]][0]].name}}+'. Если Вы хотите принять участие в решении данной проблемы, то пройдите анкету по ссылке ниже в течении трех дней и затем Вам будет выслана анкета для второго этапа голосования. Спасибо за Ваше участие"
+    //Если Вы не хотите учавствовать просто проигнорируйте это письмо.
     };
+
+
 
     $scope.sendEmailComparison = function(user, group_id) {
         $scope.entity_type = 'email';
@@ -438,6 +447,7 @@ function groupsController( $scope, ajaxFactory, updateFactory  ) {
         $scope.email = user.email;
         $scope.user_id = user.id;
         $scope.group = group_id;
+        $scope.text = 'Здравствуйе,'+user.name+'!. Это второй этап голосования по проблеме '+$scope.node_hash[$scope.level_nodes_list[$scope.level_order[0]][0]].name+'. По ссылке Вы можете перейти ко второму этапу голосования. Спасибо за участие.'
     };
 
     $scope.showUserAnswerHierarchy = function(user) {
@@ -454,6 +464,32 @@ function groupsController( $scope, ajaxFactory, updateFactory  ) {
 }
 
 function hierarchyController( $scope, ajaxFactory, updateFactory ) {
+    $scope.data = [
+        {x: 0, value: 4, otherValue: 14},
+        {x: 1, value: 8, otherValue: 1},
+        {x: 2, value: 15, otherValue: 11},
+        {x: 3, value: 16, otherValue: 147},
+        {x: 4, value: 23, otherValue: 87},
+        {x: 5, value: 42, otherValue: 45}
+    ];
+
+    $scope.options = {
+        axes: {
+            x: {key: 'x', labelFunction: function(value) {return value;}, type: 'linear', min: 0, max: 5, ticks: 2},
+            y: {type: 'linear', min: 0, max: 100, ticks: 5},
+            y2: {type: 'linear', min: 0, max: 100, ticks: [1, 2, 3, 4]}
+        },
+        series: [
+            {y: 'value', color: 'steelblue', thickness: '2px', type: 'area', striped: true, label: 'Pouet'},
+            {y: 'otherValue', axis: 'y2', color: 'lightsteelblue', visible: false, drawDots: true, dotSize: 2}
+        ],
+        lineMode: 'linear',
+        tension: 0.7,
+        tooltip: {mode: 'scrubber', formatter: function(x, y, series) {return 'pouet';}},
+        drawLegend: true,
+        drawDots: true,
+        columnsHGap: 5
+    };
 
     //разбить на функции
     $scope.init = function() {

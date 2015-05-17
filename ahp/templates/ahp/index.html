@@ -22,7 +22,9 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
     <script src="{% static 'ahp/lib/d3.v3.min.js' %}"></script>
-    <script src="http://cpettitt.github.io/project/dagre-d3/v0.3.0/dagre-d3.js"></script>
+    <script src="{% static 'ahp/lib/dagre-d3.js' %}"></script>
+    <script src="{% static 'ahp/lib/line-chart.min.js' %}"></script>
+
 
 </head>
 
@@ -31,7 +33,7 @@
 
 <div class="menu-block">
 <ul class="nav nav-pills nav-stacked" ng-init="settab='1'" >
-
+    <br>
     <li role="presentation" ng-click="settab='0'" ng-class="{active:settab=='0'}"><a href="#">О программе</a></li>
     <li role="presentation" ng-click="settab='1'; tab.initHierarchy()" ng-class="{active:settab=='1'}"><a href="#">Иерарахия</a></li>
     <li role="presentation" ng-click="settab='2'; tab.initGroups()" ng-class="{active:settab=='2'}"><a href="#">Группы экспертов</a></li>
@@ -46,8 +48,9 @@
 <div class="background-block">
 <div ng-show="settab=='1'" class="hierarchy">
     <div class="container" ng-controller="hierarchyController" ng-init="init()">
+        <hierarchygraph></hierarchygraph>
         <popup></popup>
-        <!--<hierarchygraph ></hierarchygraph>-->
+        <!--<linechart data="data" options="options" mode="" width="600" height="200"></linechart>-->
         <div class="row work-block">
             <div class="title-block">
                 Цель
@@ -93,7 +96,7 @@
                 </div>
                 <button ng-click="addNode(level_order[1])" class="btn btn-new"><span class="glyphicon glyphicon-plus">новая альтернатива</span></button>
             </div>
-            <button ng-click="graphics='graph'" class="btn btn-graph btn-default">Просмотр иерархии</button>
+            <button ng-click="init();graphics='graph'" class="btn btn-graph btn-default">Просмотр иерархии</button>
         </div>
     </div>
 </div>
@@ -192,7 +195,7 @@
 
             <div ng-controller="groupHierarchyController" class="row">
                 <popup></popup>
-               <!--<hierarchygraphgroups></hierarchygraphgroups>-->
+                <!--<hierarchygraphgroups ng-if="initialisation; !!group_nodes_list[chosen_group]" node_hash="node_hash" edges_list="edges_list" group_nodes_list="group_nodes_list" chosen_group="chosen_group"></hierarchygraphgroups>-->
                 <div ng-show="settab=='3.1'">
                     <div class="col-md-6">
                         <div class="h3">Критерии:</div>

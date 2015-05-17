@@ -4,22 +4,63 @@ div.menu-block {
     width: 200px;
     top: 0;
     bottom: 0;
-    background-color: black;
+    background-color: #0277BD;
+    font-size: 18px;
+}
+
+div.menu-block a{
+    color: white;
+}
+
+div.menu-block li.active::after {
+    content: '';
+    border: 23px solid transparent;
+    border-left: 23px solid rgb(186, 104, 200);
+    margin-left: 200px;
+    z-index: 50;
+    position: absolute;
+    margin-top: -46px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+}
+
+div.menu-block li.active>a,
+div.menu-block li.active>a:focus,
+div.menu-block li.active>a:hover{
+    background-color: rgb(186, 104, 200);
+    z-index: 50;
 }
 
 div.background-block {
     position: absolute;
     left: 200px;
     right: 0;
-    background-color: rgb(51, 122, 183);
+    background-color: #ECE9E9;
     padding: 40px;
     top: 0;
     min-height: 100%;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
 }
 
 div.work-block {
     background-color: #fff;
     box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+
+div.hierarchy_graphic {
+    font-size: 18px;
+}
+
+div.level {
+    background-color: blue;
+    display: block;
+    text-align: center;
+}
+
+div.node {
+    background-color: red;
+    display: inline;
+    padding: 5px 10px 5px 10px;
+    margin: 0 10px 0 10px;
 }
 
 div.hierarchy .work-block,
@@ -44,7 +85,7 @@ div.double .work-block {
 
 .vote-tab {
     width: 49.9%;
-    background-color: #275E8C;
+    background-color: #BCBCBC;
 }
 
 li.vote-tab.active > a,
@@ -79,12 +120,13 @@ input[type="checkbox"]:checked+label{
 
 
 div.title-block {
-    background-color: #FFF38E;
+    background-color: rgb(2, 119, 189);
     font-size: 25px;
     box-shadow: 0 6px 4px -4px rgba(0, 0, 0, .2);
     position: relative;
     z-index: 100;
     padding: 10px 0 15px 10px;
+    color: white;
 }
 
 div.small-title {
@@ -142,6 +184,7 @@ div.container {
     border-radius: 0px !important;
 }
 
+
 .level-block>.btn-new, .alt-block>.btn-new  {
     background-color: white;
 }
@@ -154,6 +197,10 @@ div.container {
 
 .crit-block>.btn-new {
     background-color: #DADADA;
+}
+
+.btn-new:focus, .btn-new:hover{
+    background-color: #E1BEE7;
 }
 
 .list-group-item:last-child,
@@ -223,8 +270,7 @@ label{
 #popup-graph{
     top: 10%;
     left: 50%;
-    margin-left: -400px;
-
+    margin-left: -500px;
     padding: 20px 20px;
     background: white;
     position: absolute;

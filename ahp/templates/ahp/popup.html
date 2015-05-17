@@ -177,9 +177,13 @@
                 <button ng-click="closePopup()" class="btn btn-default">OK</button>
             </div>
             <div ng-hide="email==''">
-                По указанному адресу <strong>{{email}}</strong> будет выслано письмо на имя <strong>{{name}}</strong> приглашением к участию в голосованию и ссылкой на форму.<br><br>
-                <button ng-click="postEmail()" class="btn btn-primary" ng-hide="check=='success_email' || check=='error_email'">Отправить</button>
-                <button ng-click="closePopup()" class="btn btn-default" ng-hide="check=='success_email' || check=='error_email'">Отмена</button>
+                По указанному адресу <strong>{{email}}</strong> будет выслано письмо следущего содержания:
+                <div class="alert alert-info">{{text}}</div><br>
+                <button ng-click="postEmail()" class="btn btn-primary" ng-hide="check=='success_email' || check=='error_email' || check=='load_email'">Отправить</button>
+                <button class="btn btn-primary" ng-show="check=='load_email'">
+                    <img src="static/ahp/ajax-loader.gif" class="ajax-loader"/>
+                </button>
+                <button ng-click="closePopup()" class="btn btn-default" ng-hide="check=='success_email' || check=='error_email'" ng-disabled="check=='load_email'">Отмена</button>
             </div>
             <div ng-show="check=='success_email'" class="alert alert-success" role="alert">
                 Письмо успешно отправлено
