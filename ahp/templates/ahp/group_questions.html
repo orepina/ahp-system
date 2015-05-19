@@ -1,0 +1,31 @@
+
+{% verbatim angular %}
+<div class="container">
+    <div ng-controller="groupQuestionController" ng-init="init()">
+        <div class="h3">
+            Дополнительная информация
+        </div>
+        <div class="level-block">
+            <div ng-repeat="question in questions | filter: {group: group_id}" class="list-group-item">
+                <span ng-show="!ifEdit($index)">{{question.name}} </span>
+                <span class="form-group" ng-show="ifEdit($index)">
+                    <input class="form-control" type="text" ng-model="question.name"/>
+                </span>
+                <button ng-click="editQuestion(-1)" ng-show="ifEdit($index)" class="btn btn-item"><span class="glyphicon glyphicon-ok"></span></button>
+                <button ng-click="editQuestion($index)" ng-show="!ifEdit($index)" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
+                <button ng-click="deletQuestion(question.id)" ng-disabled="ifEdit($index)" class="btn btn-item"><span class="glyphicon glyphicon-remove"></span></button>
+            </div>
+
+            <button ng-click="newQuestion()" class="btn btn-new" ng-show="!add"><span class="glyphicon glyphicon-plus">новый вопрос</span></button>
+            <div class="form-group" ng-show="add">
+                <input class="form-control" type="text" ng-model="question_name"/>
+                <button ng-click="addQuestion(group_id)" ng-show="add" class="btn btn-item"><span class="glyphicon glyphicon-ok"></span></button>
+                <button ng-click="cancelQuestion()" ng-show="add" class="btn btn-item"><span class="glyphicon glyphicon-remove"></span></button>
+            </div>
+
+
+        </div>
+        <button ng-click="save()" class="btn btn-default">Сохранить</button>
+    </div>
+</div>
+{% endverbatim angular %}

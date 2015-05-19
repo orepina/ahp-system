@@ -8,3 +8,17 @@ a.list-group-item {
     padding: 0
 }
 
+div.question {
+    width: 100%;
+}
+
+div.question>label{
+    width: 50%;
+}
+
+div.question>input{
+    width: 70%;
+    margin-left: 10%;
+    margin-top: -10px;
+    margin-bottom: 10px;
+}

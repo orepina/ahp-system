@@ -12,22 +12,6 @@
     <form action="" method="post">
 
     <h2>Здравствуйте, {{user.name}}.</h2>
-    {% if question_list %}
-        <div>
-        Ответьте на вопросы:
-            <ul>
-            {% for question in question_list %}
-                <li>{{ question.group }}
-                <label for="{{question.pk}}">{{ question.name }}: </label>
-                <input id="{{question.pk}}" type="text" name={{question.pk}} value="{{question.description }}">
-                <!--<input id="question.pk1" type='hidden' name="question_id" value="{{question.pk }}">-->
-                </li>
-            {% endfor %}
-            </ul>
-        </div>
-    {% else %}
-    {% endif %}
-
 
     {% if level_nodes %}
         <div>
@@ -38,7 +22,7 @@
                 Выберите критерии на каждом уровне, наиболее отражающие по вашему мнению суть проблемы
                 {% for level in level_nodes %}
                     {% if forloop.last %}
-                        <br><br>
+                        <br>
                         <h3>{{ level.name }}</h3>
                         Выберите возможные исходы, которые Вы смогли бы оценить в дальнейшем
                         <div class="list-group">
@@ -72,9 +56,22 @@
                     {% endif %}
                 {% endfor %}
             </div>
+            {% if question_list %}
+            <br><br>
+                <div>
+                <h3>Ответьте, пожалуйста, на следующие вопросы:</h3>
+                    <div>
+                    {% for question in question_list %}
+                        <div class="question">
+                        <label for="{{question.pk}}">{{ question.name }}: </label>
+                        <input  id="{{question.pk}}" type="text" name={{question.pk}} value="{{question.description }}" class="form-control" maxlength="50">
+                        </div>
+                    {% endfor %}
+                    </div>
+                </div>
+            <br><br>
+            {% endif %}
         </div>
-    {% else %}
-    nothing
     {% endif %}
 
         <input type="submit" value="Отправить" class="btn btn-primary">

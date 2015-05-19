@@ -41,6 +41,8 @@ def login(request):
 def popup(request):
     return render(request, 'ahp/popup.html')
 
+def group_questions(request):
+    return render(request, 'ahp/group_questions.html')
 
 #сколько раз разрешать пользователю отправлять данные?
 def form_for_participant(request, hash_user_id):
@@ -52,6 +54,8 @@ def form_for_participant(request, hash_user_id):
     if request.method == 'GET':
         if user.hierarchy_form == 'check':
             return render(request, 'ahp/form_thanks.html')
+        if user.hierarchy_form == 'timeout':
+            return HttpResponse('')
         else:
             question_list = Question.objects.filter(group=user_group)
             levels = Level.objects.order_by('order')
@@ -511,6 +515,8 @@ def form_for_comparison(request, hash_user_id):
     if request.method == 'GET':
         if user.comparison_form == 'check':
             return render(request, 'ahp/form_thanks.html')
+        if user.comparison_form == 'timeout':
+            return HttpResponse('')
         else:
             node_goal = LevelNodes.objects.get(level=Level.objects.get(name='goal')).node
             goal = Node.objects.get(pk=node_goal.pk)
