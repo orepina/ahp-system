@@ -31,7 +31,9 @@
                                     <label for={{node.pk}} class="pairwise_val">
                                         <input type="checkbox" name="node" id="{{node.pk}}" value="{{node.node.pk}}"/>
                                         {{ node.node.name }}
-                                        <small>({{ node.node.name }})</small>
+                                        {% if node.node.description %}
+                                        <small>({{ node.node.description }})</small>
+                                        {% endif %}
                                     </label>
                                 </a>
                             {% endfor %}
@@ -47,7 +49,9 @@
                                     <label for={{node.pk}} class="pairwise_val">
                                     <input type="checkbox" name="node" id="{{node.pk}}" value="{{node.node.pk}}"/>
                                         {{ node.node.name }}
-                                        <small>({{ node.node.name }})</small>
+                                        {% if node.node.description %}
+                                        <small>({{ node.node.description }})</small>
+                                        {% endif %}
                                     </label>
                                 </a>
                             {% endfor %}

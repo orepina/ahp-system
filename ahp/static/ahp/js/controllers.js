@@ -353,6 +353,7 @@ function groupsController( $scope, ajaxFactory, updateFactory  ) {
         ajaxFactory.getRequest('users_answer_hierarchy', '')
             .success(function(data, status, headers, config) {
                 $scope.users_answer_hierarchy = updateFactory.updateUsersAnswerHierarchy(data);
+                $scope.users_question = updateFactory.updateUsersAnswer(data);
             }).error(function(data, status, headers, config){});
         ajaxFactory.getRequest('users_answer_comparison', '')
             .success(function(data, status, headers, config) {

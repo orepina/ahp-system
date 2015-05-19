@@ -93,6 +93,9 @@ function updateFactory() {
             return user_nodes
         },
 
+        updateUsersAnswer: function(data) {
+        },
+
         updateUsersAnswerComparison: function(data) {
             return data.user_comparison
         },
