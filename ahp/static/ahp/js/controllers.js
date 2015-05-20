@@ -672,7 +672,7 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
         var group_list = [];
 
         for (var i=0;i<$scope.checked_group_list.length;i++){
-            var priority = ($scope.show_priority) ? $scope.group_hash[$scope.checked_group_list[i]].priority : 100/$scope.checked_group_list.length;
+            var priority = ($scope.show_priority && $scope.checked_group_list.length>1) ? $scope.group_hash[$scope.checked_group_list[i]].priority : 100/$scope.checked_group_list.length;
             group_list.push({'id': $scope.checked_group_list[i], 'priority': priority})
         };
 

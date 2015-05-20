@@ -1,0 +1,122 @@
+{% verbatim angular %}
+<div class="container work-block">
+        <div ng-controller="chooseGroupController">
+            <ul class="nav nav-pills vote-nav" ng-init="settab='3.1'" >
+                <li role="presentation" ng-click="settab='3.1'" ng-class="{active:settab=='3.1'}" class="vote-tab"><a href="#">Иерархия</a></li>
+                <li role="presentation" ng-click="settab='3.2'" ng-class="{active:settab=='3.2'}" class="vote-tab"><a href="#">Приоритеты</a></li>
+            </ul>
+
+            <div class="row">
+                <div class="title-block">
+                    <span class="h3">
+                        Настройки для группы
+                    </span>
+                    <span class="dropdown">
+                        <button class="btn btn-default dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-expanded="true">
+                            {{group_hash[chosen_group].name}}
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                            <li ng-repeat="(group_key, group) in group_hash" role="presentation">
+                                <a role="menuitem" tabindex="-1" href="#" ng-click="chooseGroupNodes(group_key)">
+                                    {{group.name}}
+                                </a>
+                            </li>
+                        </ul>
+                    </span>
+                </div>
+            </div>
+
+            <div ng-controller="groupHierarchyController" class="row">
+                <popup></popup>
+                <!--<hierarchygraphgroups ng-if="initialisation; !!group_nodes_list[chosen_group]" node_hash="node_hash" edges_list="edges_list" group_nodes_list="group_nodes_list" chosen_group="chosen_group"></hierarchygraphgroups>-->
+                <div ng-show="settab=='3.1'">
+                    <div class="col-md-6">
+                        <div class="h3">Критерии:</div>
+                        <div class="list-group">
+                            <div ng-repeat="level in level_order" ng-if="$index > 1" class="level-block">
+                                <div class="small-title">
+                                    {{level_hash[level].name}}
+                                </div>
+                                <div ng-show="level_nodes_list[level].length>0" ng-repeat="(node_key, node) in level_nodes_list[level]" class="list-group-item">
+                                    <label>
+                                        <input type="checkbox" checklist-model="group_nodes_list[chosen_group]" checklist-value="node" ng-disabled="groups_votes[chosen_group].hierarchy_email>0">
+                                        {{node_hash[node].name}}
+                                    </label>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="h3">Альтернативы:</div>
+                        <div class="list-group level-block">
+                            <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" class="list-group-item">
+                                <label>
+                                <input type="checkbox" checklist-model="group_nodes_list[chosen_group]" checklist-value="node" ng-disabled="groups_votes[chosen_group].hierarchy_email>0">
+                                {{node_hash[node].name}}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <button ng-click="graphics='graph'" class="btn btn-graph btn-default">Просмотр иерархии</button>
+                    <div class="button-group">
+                        <button ng-click="save(chosen_group)" class="btn btn-primary" ng-hide="groups_votes[chosen_group].hierarchy_email>0">Сохранить настройки для данной группы</button>
+                        <div ng-show="save_nodes=='success'" class="alert alert-success">Настройки успешно сохранены</div>
+                        <div ng-show="save_nodes=='error'" class="alert alert-danger">Ошибка при сохранении, повторите позже</div>
+                        <div ng-show="groups_votes[chosen_group].hierarchy_email>0" class="alert alert-danger">
+                            Вы не можете поменять настройки, так как уже выслали письмо для голосования с такими настройками
+                        </div>
+                    </div>
+                </div>
+
+                <div ng-show="settab=='3.2'">
+                    <div ng-controller="groupHierarchyVotesController">
+                        <!--<hierarchygraphgroupsvotes></hierarchygraphgroupsvotes>-->
+                        <div class="col-md-6">
+                            <div class="h3">Критерии:</div>
+                            <div class="list-group">
+                                <div ng-repeat="level in level_order" ng-if="$index > 1" class="level-block">
+                                    <div class="small-title">
+                                        {{level_hash[level].name}}
+                                    </div>
+                                    <div  ng-repeat="(node_key, node) in level_nodes_list[level]" ng-if="isForShow(chosen_group, node)" class="list-group-item">
+                                        <label>
+                                            <input type="checkbox" checklist-model="group_nodes_for_comparison_list[chosen_group]" checklist-value="node" ng-disabled="groups_votes[chosen_group].comparison_email>0">
+                                            {{node_hash[node].name}}
+                                            <span class="badge">{{group_nodes_count_list[chosen_group][node].count}}</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="h3">Альтернативы:</div>
+                            <div class="list-group level-block">
+                                <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" ng-if="isForShow(chosen_group, node)" class="list-group-item">
+                                    <label>
+                                        <input type="checkbox" checklist-model="group_nodes_for_comparison_list[chosen_group]" checklist-value="node" ng-disabled="groups_votes[chosen_group].comparison_email>0">
+                                        {{node_hash[node].name}}
+                                        <span class="badge">{{group_nodes_count_list[chosen_group][node].count}}</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <button ng-click="graphics='graph'" class="btn btn-graph btn-default">Просмотр иерархии</button>
+                        <div class="button-group">
+                            <button ng-click="send(chosen_group)" class="btn btn-primary" ng-hide="groups_votes[chosen_group].comparison_email>0">Сохранить настройки для данной группы</button>
+                            <div ng-show="save_nodes_v=='success'" class="alert alert-success">Настройки успешно сохранены</div>
+                            <div ng-show="save_nodes_v=='error'" class="alert alert-danger">Ошибка при сохранении, повторите позже</div>
+                            <div ng-show="groups_votes[chosen_group].comparison_email>0" class="alert alert-danger">
+                                Вы не можете поменять настройки, так как уже выслали письмо для голосования с такими настройками
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+{% endverbatim angular %}

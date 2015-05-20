@@ -1,0 +1,60 @@
+{% verbatim angular %}
+<div ng-controller="groupsController" class="container work-block">
+        <popup></popup>
+        <div class="row">
+            <div class="title-block" >
+                Группы
+            </div>
+        </div>
+        <div class="row">
+            <div>
+                <div ng-repeat="(group_id, group) in group_hash" class="level-block">
+                    <div class="small-title">
+                        {{group.name}}
+                        <span class="user-status">
+                        статус голосования
+                        </span>
+                        <button ng-click="editGroup(group_id)" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
+                        <button ng-click="deletGroup(group_id)" class="btn btn-item"><span class="glyphicon glyphicon-remove"></span></button>
+                        <button ng-click="settingsGroup(group_id)" class="btn btn-item"><span class="glyphicon glyphicon-question-sign"></span></button>
+                    </div>
+                    <div>
+                        <div ng-repeat="user in user_list | filter: {group: group_id}" class="list-group-item">
+                            {{user.name}}
+                            {{user.email}}
+
+                            <button ng-click="editUser(user, group_id)" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
+                            <button ng-click="deletUser(user, group_id)" class="btn btn-item"><span class="glyphicon glyphicon-remove"></span></button>
+
+                            <span class="user-status">
+                                <span ng-show="group.count['for_hierarchy'] > 0">
+                                    <button ng-show="user.hierarchy_form == ''" ng-click="sendEmailHierarchy(user, group_id)" class="btn btn-primary"><span class="glyphicon glyphicon-envelope"></span></button>
+                                    <span ng-show="user.hierarchy_form == 'email'" class="label label-info"><span class="glyphicon glyphicon-time"></span></span>
+                                    <button ng-show="user.hierarchy_form == 'check'" class="btn btn-success" ng-click="showUserAnswerHierarchy(user)"><span class="glyphicon glyphicon-ok"></span></button>
+
+                                <span ng ng-show="group.count['for_comparison'] > 0">
+                                        <button ng-show="user.comparison_form == ''" ng-click="sendEmailComparison(user, group_id)" class="btn btn-primary"><span class="glyphicon glyphicon-envelope"></span></button>
+                                        <span ng-show="user.comparison_form == 'email'" class="label label-info"><span class="glyphicon glyphicon-time"></span></span>
+                                        <button ng-show="user.comparison_form == 'check'" class="btn btn-success" ng-click="showUserAnswerComparison(user)"><span class="glyphicon glyphicon-ok"></span></button>
+
+                                </span>
+                                <span ng ng-hide="group.count['for_comparison'] > 0" class="label label-danger">
+                                    <span class="glyphicon glyphicon-envelope"></span>
+                                    настройки г2
+                                </span>
+                            </span>
+                            <span ng-hide="group.count['for_hierarchy'] > 0" class="label label-danger">
+                                <span class="glyphicon glyphicon-envelope"></span>
+                                настройки г1
+                            </span>
+                            </span>
+
+                        </div>
+                    </div>
+                    <button ng-click="addUser(group_id)" class="btn btn-new"><span class="glyphicon glyphicon-plus">новый эксперт</span></button>
+                </div>
+                <button ng-click="addGroup()" class="btn btn-new"><span class="glyphicon glyphicon-plus">новая группа</span></button>
+            </div>
+        </div>
+    </div>
+{% endverbatim angular %}

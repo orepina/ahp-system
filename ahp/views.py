@@ -34,6 +34,18 @@ def main(request):
 def hierarchy_graph(request):
     return render(request, 'ahp/hierarchy_graph.html')
 
+def hierarchy(request):
+    return render(request, 'ahp/hierarchy.html')
+
+def group_template(request):
+    return render(request, 'ahp/group_template.html')
+
+def votes(request):
+    return render(request, 'ahp/votes.html')
+
+def priority(request):
+    return render(request, 'ahp/priority.html')
+
 def login(request):
     template_response = views.login(request)
     return template_response

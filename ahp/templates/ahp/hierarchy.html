@@ -1,0 +1,54 @@
+{% verbatim angular %}
+<div class="container" ng-controller="hierarchyController" ng-init="init()">
+        <hierarchygraph></hierarchygraph>
+        <popup></popup>
+        <!--<linechart data="data" options="options" mode="" width="600" height="200"></linechart>-->
+        <div class="row work-block">
+            <div class="title-block">
+                Цель
+            </div>
+            <h3>&nbsp;&nbsp;&nbsp;
+                {{node_hash[level_nodes_list[level_order[0]][0]].name}}
+                <button ng-click="editGoal(level_nodes_list[level_order[0]][0], level_order[0])" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
+            </h3>
+            <br><br>
+        </div>
+
+        <div class="double">
+            <div class="work-block">
+                <div class="title-block">
+                    Критерии
+                </div>
+                <div class="crit-block" >
+                    <div ng-repeat="level in level_order" ng-if="$index > 1" class="level-block">
+                        <div class="small-title">
+                            {{level_hash[level].name}}
+                            <button ng-click="editLevel(level)" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
+                            <button ng-click="deletLevel(level)" class="btn btn-item"><span class="glyphicon glyphicon-remove"></span></button>
+                        </div>
+                        <div  ng-repeat="(node_key, node) in level_nodes_list[level]" class="list-group-item">
+                            {{node_hash[node].name}}
+                            <button ng-click="editNode(level, node, 'level')" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
+                            <button ng-click="deletNode(level, node, 'level')" class="btn btn-item"><span class="glyphicon glyphicon-remove"></span></button>
+                        </div>
+                        <button ng-click="addNode(level, 'level')" class="btn btn-new"><span class="glyphicon glyphicon-plus">новый критерий</span></button>
+                    </div>
+                    <button ng-click="addLevel()" class="btn btn-new"><span class="glyphicon glyphicon-plus">новый уровень</span></button>
+                </div>
+            </div>
+
+            <div class="alt-block work-block">
+                <div class="title-block">
+                    Альтернативы
+                </div>
+                <div  ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" class="list-group-item">
+                    {{node_hash[node].name}}
+                    <button ng-click="editNode(level_order[1], node)" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
+                    <button ng-click="deletNode(level_order[1], node)" class="btn btn-item"><span class="glyphicon glyphicon-remove"></span></button>
+                </div>
+                <button ng-click="addNode(level_order[1])" class="btn btn-new"><span class="glyphicon glyphicon-plus">новая альтернатива</span></button>
+            </div>
+            <button ng-click="init();graphics='graph'" class="btn btn-graph btn-default">Просмотр иерархии</button>
+        </div>
+    </div>
+{% endverbatim angular %}
