@@ -944,7 +944,10 @@ def save_absolute_value(request):
             sum = sum + float(alt['value'])
         for alt in alt_edges[crit]:
             edge = Edge.objects.get(project=project, parent=Node.objects.get(project=project, pk=crit), node=Node.objects.get(project=project, pk=alt['alt']))
-            weight = float(alt['value'])/float(sum)
+            if sum == 0:
+                weight = 1/len(alt_edges[crit])
+            else:
+                weight = float(alt['value'])/float(sum)
             for user in User.objects.filter(project=project):
                 Weight.objects.update_or_create(user=user, edge=edge, defaults=dict(weight=weight))
     return  HttpResponse('')
