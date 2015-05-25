@@ -4,6 +4,7 @@ import hashlib
 
 class Project(models.Model):
     info = models.CharField(max_length=30, default='')
+    type = models.CharField(max_length=30, default='')
     def __unicode__(self):
         return self.info
 
@@ -11,6 +12,7 @@ class Project(models.Model):
 class Group(models.Model):
     name = models.CharField(max_length=30, default='')
     description = models.CharField(max_length=30, default='')
+    project = models.ForeignKey(Project)
     def __unicode__(self):
         return self.name
 
@@ -25,6 +27,7 @@ class User(models.Model):
     comparison_form = models.CharField(max_length=15, default='')
     confidence1 = models.IntegerField()
     confidence2 = models.IntegerField()
+    project = models.ForeignKey(Project)
     def __unicode__(self):
         return self.name
 
@@ -32,6 +35,7 @@ class User(models.Model):
 class Node(models.Model):
     name = models.CharField(max_length=30, default='')
     description = models.CharField(max_length=30, default='')
+    project = models.ForeignKey(Project)
     def __unicode__(self):
         return self.name
 
@@ -40,6 +44,8 @@ class Level(models.Model):
     order = models.IntegerField()
     name = models.CharField(max_length=30, default='')
     description = models.CharField(max_length=30, default='')
+    type = models.CharField(max_length=30, default='')
+    project = models.ForeignKey(Project)
     def __unicode__(self):
         return self.name
 
@@ -47,6 +53,7 @@ class Level(models.Model):
 class UserNodes(models.Model):
     node = models.ForeignKey(Node)
     user = models.ForeignKey(User)
+    project = models.ForeignKey(Project)
 
 
 class GroupNodes(models.Model):
@@ -54,12 +61,14 @@ class GroupNodes(models.Model):
     group = models.ForeignKey(Group)
     type = models.CharField(max_length=30, default='')
     count = models.IntegerField()
+    project = models.ForeignKey(Project)
 
 
 class Question(models.Model):
     group = models.ForeignKey(Group)
     name = models.CharField(max_length=30, default='')
     description = models.CharField(max_length=30, default='')
+    project = models.ForeignKey(Project)
     def __unicode__(self):
         return self.name
 
@@ -73,6 +82,7 @@ class UserInfo(models.Model):
 class LevelNodes(models.Model):
     level = models.ForeignKey(Level)
     node = models.ForeignKey(Node)
+    project = models.ForeignKey(Project)
     def __unicode__(self):
         return self.node.name
 
@@ -81,6 +91,7 @@ class Edge(models.Model):
     node = models.ForeignKey(Node, blank=True, null=True, related_name='children')
     parent = models.ForeignKey(Node, blank=True, null=True, related_name='parent')
     level = models.ForeignKey(Level)
+    project = models.ForeignKey(Project)
     def __unicode__(self):
         return self.node.name
 

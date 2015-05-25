@@ -32,13 +32,13 @@
 
 <div class="menu-block">
 <ul class="nav nav-pills nav-stacked" ng-init="settab='1'" >
-    <br>
+    <a href="/projects" id="back">< к проектам</a>
+    <br><br>
     <li role="presentation" ng-click="settab='0'" ng-class="{active:settab=='0'}"><a href="#">О программе</a></li>
     <li role="presentation" ng-click="settab='1'; tab.initHierarchy()" ng-class="{active:settab=='1'}"><a href="#">Иерарахия</a></li>
     <li role="presentation" ng-click="settab='2'; tab.initGroups()" ng-class="{active:settab=='2'}"><a href="#">Группы экспертов</a></li>
     <li role="presentation" ng-click="settab='3'; tab.initGroupHierarchyVotes()" ng-class="{active:settab=='3'}"><a href="#">Опросы</a></li>
     <li role="presentation" ng-click="settab='4'; tab.initGlobalPriority()" ng-class="{active:settab=='4'}"><a href="#">Расчет приоритетов</a></li>
-
 </ul>
 </div>
 

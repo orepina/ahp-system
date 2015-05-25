@@ -30,6 +30,11 @@ div.menu-block li.active>a:hover{
     z-index: 50;
 }
 
+#back {
+    color: #B0D2E7;
+    font-size: 16px;
+}
+
 div.background-block {
     position: absolute;
     left: 200px;

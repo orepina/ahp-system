@@ -112,6 +112,11 @@ function popup(ajaxFactory){
                 $scope.postToServer($scope.entity_type, data);
             };
 
+            $scope.postAltType = function() {
+                var data = {act_type: $scope.act_type, level_id: $scope.level_id, type: $scope.type};
+                $scope.postToServer($scope.entity_type, data);
+            };
+
             $scope.refresh_user = function() {
                 for (var i=0;i<$scope.user_list.length;i++) {
                     if ($scope.user_list[i].id == $scope.user_id) {

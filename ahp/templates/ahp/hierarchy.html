@@ -40,6 +40,7 @@
             <div class="alt-block work-block">
                 <div class="title-block">
                     Альтернативы
+                    <button ng-click="editType(level_order[1])" class="btn btn-item"><span class="glyphicon glyphicon-pencil"></span></button>
                 </div>
                 <div  ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" class="list-group-item">
                     {{node_hash[node].name}}

@@ -4,18 +4,18 @@
 
 function ajaxFactory( $http ) {
     return {
-        postRequest : function( entity_type, data ) {
+        postRequest : function( entity_type, data, project ) {
             return $http ({
                     method: 'POST',
-                    url: entity_type +'/',// +act_type ,
+                    url: entity_type +'/',// +project
                     data: data
                 })
         },
 
-        getRequest : function( method, parameters ) {
+        getRequest : function( method, parameters, project ) {
             return $http ({
                     method: 'GET',
-                    url: method + parameters +'/'
+                    url: method + parameters +'/',// +project
                 })
         }
     }
@@ -37,7 +37,7 @@ function updateFactory() {
             var temp = JSON.parse(data),
                 level_hash = {};
             for (var i=0; i<temp.length; i++){
-                level_hash[temp[i].pk] = {name: temp[i].fields.name, description: temp[i].fields.description};
+                level_hash[temp[i].pk] = {name: temp[i].fields.name, description: temp[i].fields.description, type: temp[i].fields.type};
             }
             return level_hash;
         },
@@ -81,6 +81,18 @@ function updateFactory() {
                 edges_list.push({parent: temp[i].fields.parent, node: temp[i].fields.node})
             }
             return edges_list
+        },
+
+        updateAltEdgesList: function(data, alt_id) {
+            var temp = JSON.parse(data),
+                alt_edges_list = {};
+            for (var i=0; i<temp.length; i++){
+                if (temp[i].fields.level==alt_id) {
+                    alt_edges_list[temp[i].fields.parent] = alt_edges_list[temp[i].fields.parent] || [];
+                    alt_edges_list[temp[i].fields.parent].push({alt: temp[i].fields.node, value: 0});
+                }
+            }
+            return alt_edges_list
         },
 
         updateUsersAnswerHierarchy: function(data) {

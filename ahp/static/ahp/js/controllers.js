@@ -3,8 +3,15 @@
  */
 
 
-function tabController( $scope ){
-    $scope.tab = {}
+function tabController( $scope, ajaxFactory ){
+    $scope.tab = {};
+
+    $scope.backToProjects = function () {
+    ajaxFactory.getRequest('back_to_projects','')
+        .success(function(data, status, headers, config){})
+        .error(function(data, status, headers, config){});
+    }
+
 }
 
 
@@ -433,12 +440,9 @@ function groupsController( $scope, ajaxFactory, updateFactory  ) {
         $scope.email = user.email;
         $scope.user_id = user.id;
         $scope.group = group_id;
-        $scope.text = 'Здравствуйте, '+user.name+'!. Вы приглашены для участия в голосовании по проблеме '+$scope.node_hash[$scope.level_nodes_list[$scope.level_order[0]][0]].name+'. По ссылке Вы можете перейти к первому этапу голосования. Через несколько дней Вам придет письмо с приглашением к участию во втором этапе голосования.'
-    //'Здравствуйте, '+user.name+'!.Нас инетересует ваше мнение по проблеме'+{{$scope.node_hash[$scope.level_nodes_list[$scope.level_order[0]][0]].name}}+'. Если Вы хотите принять участие в решении данной проблемы, то пройдите анкету по ссылке ниже в течении трех дней и затем Вам будет выслана анкета для второго этапа голосования. Спасибо за Ваше участие"
-    //Если Вы не хотите учавствовать просто проигнорируйте это письмо.
+        //$scope.text = 'Здравствуйте, '+user.name+'!. Вы приглашены для участия в голосовании по проблеме '+$scope.node_hash[$scope.level_nodes_list[$scope.level_order[0]][0]].name+'. По ссылке Вы можете перейти к первому этапу голосования. Через несколько дней Вам придет письмо с приглашением к участию во втором этапе голосования.'
+        $scope.text ='Здравствуйте, '+user.name+'!. Нас инетересует ваше мнение по проблеме '+{{$scope.node_hash[$scope.level_nodes_list[$scope.level_order[0]][0]].name}}+'. Если Вы хотите принять участие в решении данной проблемы, то пройдите анкету по ссылке в течении трех дней. Затем Вам будет выслана анкета для второго этапа голосования. Спасибо за Ваше участие. Если Вы не хотите учавствовать, то просто проигнорируйте это письмо.'
     };
-
-
 
     $scope.sendEmailComparison = function(user, group_id) {
         $scope.entity_type = 'email';
@@ -448,7 +452,7 @@ function groupsController( $scope, ajaxFactory, updateFactory  ) {
         $scope.email = user.email;
         $scope.user_id = user.id;
         $scope.group = group_id;
-        $scope.text = 'Здравствуйе,'+user.name+'!. Это второй этап голосования по проблеме '+$scope.node_hash[$scope.level_nodes_list[$scope.level_order[0]][0]].name+'. По ссылке Вы можете перейти ко второму этапу голосования. Спасибо за участие.'
+        $scope.text = 'Здравствуйе, '+user.name+'!. Это второй этап голосования по проблеме '+$scope.node_hash[$scope.level_nodes_list[$scope.level_order[0]][0]].name+'. По ссылке Вы можете перейти ко второму этапу голосования. Спасибо за участие.'
     };
 
     $scope.showUserAnswerHierarchy = function(user) {
@@ -465,32 +469,6 @@ function groupsController( $scope, ajaxFactory, updateFactory  ) {
 }
 
 function hierarchyController( $scope, ajaxFactory, updateFactory ) {
-    $scope.data = [
-        {x: 0, value: 4, otherValue: 14},
-        {x: 1, value: 8, otherValue: 1},
-        {x: 2, value: 15, otherValue: 11},
-        {x: 3, value: 16, otherValue: 147},
-        {x: 4, value: 23, otherValue: 87},
-        {x: 5, value: 42, otherValue: 45}
-    ];
-
-    $scope.options = {
-        axes: {
-            x: {key: 'x', labelFunction: function(value) {return value;}, type: 'linear', min: 0, max: 5, ticks: 2},
-            y: {type: 'linear', min: 0, max: 100, ticks: 5},
-            y2: {type: 'linear', min: 0, max: 100, ticks: [1, 2, 3, 4]}
-        },
-        series: [
-            {y: 'value', color: 'steelblue', thickness: '2px', type: 'area', striped: true, label: 'Pouet'},
-            {y: 'otherValue', axis: 'y2', color: 'lightsteelblue', visible: false, drawDots: true, dotSize: 2}
-        ],
-        lineMode: 'linear',
-        tension: 0.7,
-        tooltip: {mode: 'scrubber', formatter: function(x, y, series) {return 'pouet';}},
-        drawLegend: true,
-        drawDots: true,
-        columnsHGap: 5
-    };
 
     //разбить на функции
     $scope.init = function() {
@@ -519,6 +497,7 @@ function hierarchyController( $scope, ajaxFactory, updateFactory ) {
                 $scope.level_nodes_list = updateFactory.updateLevelList(data.level_nodes);
                 //$scope.adjacency_list = updateFactory.updateAdjacencyList(data.edges);
                 $scope.edges_list = updateFactory.updateEdgesList(data.edges);
+                $scope.type = $scope.level_hash[$scope.level_order[1]].type
             })
             .error(function(data, status, headers, config){})
     };
@@ -576,6 +555,10 @@ function hierarchyController( $scope, ajaxFactory, updateFactory ) {
         $scope.paramForNodePopup(entity_type, 'delet', $scope.node_hash[node_id].name, $scope.node_hash[node_id].description, level_id, node_id, parent);
     };
 
+    $scope.editType = function(level_id) {
+        $scope.paramForNodePopup('alt_type', 'edit_type', '', '', level_id, '', '')
+    }
+
 }
 
 function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
@@ -596,12 +579,13 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
         $scope.node_hash = {};
         $scope.level_nodes_list = {};
         $scope.level_order = [];
+        $scope.level_hash = {};
         $scope.result = {};
+        $scope.type = '';
         $scope.group_priority = {};
         $scope.show_priority = false;
         $scope.calculated = false;
         $scope.update();
-
     };
 
     $scope.initResult = function() {
@@ -660,9 +644,11 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
         ajaxFactory.getRequest('common_hierarchy', '', '')
             .success(function(data, status, headers, config) {
                 $scope.node_hash = updateFactory.updateNodeHash(data.nodes);
-                //$scope.level_hash = updateFactory.updateLevelHash(data.levels);
+                $scope.level_hash = updateFactory.updateLevelHash(data.levels);
                 $scope.level_order = updateFactory.updateLevelOrder(data.levels);
                 $scope.level_nodes_list = updateFactory.updateLevelList(data.level_nodes);
+                $scope.type = $scope.level_hash[$scope.level_order[1]].type;
+                $scope.alt_edges = updateFactory.updateAltEdgesList(data.edges, $scope.level_order[1]);
                 $scope.initResult();
             })
             .error(function(data, status, headers, config){});
@@ -670,7 +656,6 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
 
     $scope.calculate = function() {
         var group_list = [];
-
         for (var i=0;i<$scope.checked_group_list.length;i++){
             var priority = ($scope.show_priority && $scope.checked_group_list.length>1) ? $scope.group_hash[$scope.checked_group_list[i]].priority : 100/$scope.checked_group_list.length;
             group_list.push({'id': $scope.checked_group_list[i], 'priority': priority})
@@ -680,16 +665,20 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
             .success(function(data, status, headers, config) {
                     $scope.result = data.result;
                     $scope.calculated = true;
-            }).error(function(data, status, headers, config){
-                console.log(data, status, headers, config)
-            });
-    }
+            }).error(function(data, status, headers, config){});
+    };
 
     $scope.user_settings = function(group_key) {
         $scope.chosen_group = group_key;
         $scope.act_type = 'user_list';
         $scope.entity_type = 'user_list';
     };
+
+    $scope.saveAbsoluteValue = function() {
+        ajaxFactory.postRequest('save_absolute_value', {alt_edges: $scope.alt_edges})
+            .success(function(data, status, headers, config){})
+            .error(function(data, status, headers, config){});
+    }
 
 
 

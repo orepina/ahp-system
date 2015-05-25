@@ -66,10 +66,17 @@
                 <h3>Ответьте, пожалуйста, на следующие вопросы:</h3>
                     <div>
                     {% for question in question_list %}
-                        <div class="question">
-                        <label for="{{question.pk}}">{{ question.name }}: </label>
-                        <input  id="{{question.pk}}" type="text" name={{question.pk}} value="{{question.description }}" class="form-control" maxlength="50">
-                        </div>
+                        {% ifequal question.description 'special'%}
+                            <div class="question">
+                            <label for="{{question.pk}}">{{ question.name }}: </label>
+                            <textarea   id="{{question.pk}}" type="text" name={{question.pk}} value="" class="form-control" maxlength="300"></textarea>
+                            </div>
+                        {% else %}
+                            <div class="question">
+                            <label for="{{question.pk}}">{{ question.name }}: </label>
+                            <input  id="{{question.pk}}" type="text" name={{question.pk}} value="" class="form-control" maxlength="50">
+                            </div>
+                        {% endifequal %}
                     {% endfor %}
                     </div>
                 </div>

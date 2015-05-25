@@ -28,27 +28,62 @@ from ahp.models import Project, Group, User, Node, UserNodes, GroupNodes, Edge, 
 
 
 def main(request):
-    return render(request, 'ahp/index.html')
+    if Project.objects.filter(type='current').count()==1:
+        return render(request, 'ahp/index.html')
+    else:
+        url = "/ahp/projects/"
+        return redirect(url)
+
+
+def projects(request):
+    if request.method == 'GET':
+        projects_list = Project.objects.all()
+        Project.objects.all().update(type='')
+        return render(request, 'ahp/projects.html', {'projects': projects_list})
+    if request.method == 'POST':
+        if len(request.POST)>0:
+            for field in request.POST:
+                project_id = request.POST[field]
+            if project_id == 'new':
+                project = Project.objects.create(info='...', type='current')
+                level_goal = Level.objects.create(project=project, name='goal', description='', order=0)
+                node_goal = Node.objects.create(project=project, name='', description='')
+                ln_goal = LevelNodes.objects.create(project=project, level=level_goal, node=node_goal)
+                Level.objects.create(project=project, name='alternatives', description='', order=1)
+            else:
+                p = Project.objects.get(pk=project_id)
+                p.type = 'current'
+                p.save()
+            url = "/ahp"
+            return redirect(url)
+        else:
+            return render(request, 'ahp/projects.html', {'projects': projects_list})
 
 
 def hierarchy_graph(request):
     return render(request, 'ahp/hierarchy_graph.html')
 
+
 def hierarchy(request):
     return render(request, 'ahp/hierarchy.html')
+
 
 def group_template(request):
     return render(request, 'ahp/group_template.html')
 
+
 def votes(request):
     return render(request, 'ahp/votes.html')
+
 
 def priority(request):
     return render(request, 'ahp/priority.html')
 
+
 def login(request):
     template_response = views.login(request)
     return template_response
+
 
 def popup(request):
     return render(request, 'ahp/popup.html')
@@ -56,25 +91,25 @@ def popup(request):
 def group_questions(request):
     return render(request, 'ahp/group_questions.html')
 
-#сколько раз разрешать пользователю отправлять данные?
+
 def form_for_participant(request, hash_user_id):
-    #hash_user_id = '809ffca6e3'
-    #TODO get or 404
     user = User.objects.get(id_hash=hash_user_id)
+    project = user.project
     user_group = user.group
-    goal = LevelNodes.objects.get(level=Level.objects.get(name='goal')).node
+    level = Level.objects.get(name='goal', project=project)
+    goal = LevelNodes.objects.get(level=level, project=project).node
     if request.method == 'GET':
         if user.hierarchy_form == 'check':
             return render(request, 'ahp/form_thanks.html')
         if user.hierarchy_form == 'timeout':
             return HttpResponse('')
         else:
-            question_list = Question.objects.filter(group=user_group)
-            levels = Level.objects.order_by('order')
+            question_list = Question.objects.filter(group=user_group, project=project)
+            levels = Level.objects.filter(project=project).order_by('order')
             level_nodes = []
             a = {}
             for level in levels:
-                nodes = LevelNodes.objects.filter(level=level)
+                nodes = LevelNodes.objects.filter(level=level, project=project)
                 if level.name == 'alternatives':
                     a['name'] = 'Возможные исходы'
                     a['nodes'] = []
@@ -103,13 +138,13 @@ def form_for_participant(request, hash_user_id):
         #if len(request.POST.getlist('node'))<3:
         for field in request.POST:
             if field!='node':
-                question = Question.objects.get(pk=field)
+                question = Question.objects.get(pk=field, project=project)
                 answer = request.POST[field]
-                user_info = UserInfo.objects.update_or_create(user=user, question=question,defaults=dict(answer=answer))
+                user_info = UserInfo.objects.update_or_create(user=user, question=question, defaults=dict(answer=answer))
             else:
                 for node_id in request.POST.getlist('node'):
-                    node = Node.objects.get(pk=node_id)
-                    user_nodes = UserNodes.objects.create(user=user, node=node)
+                    node = Node.objects.get(pk=node_id, project=project)
+                    user_nodes = UserNodes.objects.create(user=user, node=node, project=project)
                     group_nodes = GroupNodes.objects.get(group=user_group, node=node)
                     #group_nodes.type = 'user_choice'
                     group_nodes.count = group_nodes.count+1
@@ -128,10 +163,11 @@ def group_has_node(group, node):
 
 
 def common_hierarchy(request):
-    nodes = serializers.serialize('json', Node.objects.all())
-    edges = serializers.serialize('json', Edge.objects.all())
-    levels = serializers.serialize('json', Level.objects.all())
-    level_nodes = serializers.serialize('json', LevelNodes.objects.all())
+    project = Project.objects.get(type='current')
+    nodes = serializers.serialize('json', Node.objects.filter(project=project))
+    edges = serializers.serialize('json', Edge.objects.filter(project=project))
+    levels = serializers.serialize('json', Level.objects.filter(project=project))
+    level_nodes = serializers.serialize('json', LevelNodes.objects.filter(project=project))
     return HttpResponse(json.dumps({
         'nodes': nodes,
         'edges': edges,
@@ -142,22 +178,21 @@ def common_hierarchy(request):
 
 #put level(add, change, delete)
 def level(request):
+    project = Project.objects.get(type='current')
     data = json.loads(request.body)
     name = data['name']
     description = data['description']
     level_id = data['level_id']
     order = data['order']
     if data['act_type'] == 'add':
-        Level.objects.create(order=order, name=name, description=description )
-    #пока что редактировани только инфы(нет перемещений)
+        Level.objects.create(order=order, name=name, description=description, project=project, type='')
     if data['act_type'] == 'edit':
-        level = Level.objects.get(pk=level_id)
+        level = Level.objects.get(pk=level_id, project=project)
         level.name = name
         level.description = description
         level.save()
     if data['act_type'] == 'delet':
-        #удаляем все edge c таким потомком и переформируем
-        level = Level.objects.get(pk=level_id)
+        level = Level.objects.get(pk=level_id, project=project)
         edge_consist(level)
         node_consist(level)
         level.delete()
@@ -166,21 +201,24 @@ def level(request):
 
 
 def edge_consist(level):
+    project = Project.objects.get(type='current')
     parent_nodes, children_nodes, l_child = level_edges_nodes(level)
     for parent_node in parent_nodes:
         for child_node in children_nodes:
-            Edge.objects.create(node=child_node.node, parent=parent_node.node, level=l_child)
-    Edge.objects.filter(level=level).delete()
+            Edge.objects.create(node=child_node.node, parent=parent_node.node, level=l_child, project=project)
+    Edge.objects.filter(level=level, project=project).delete()
 
 
 def node_consist(level):
+    project = Project.objects.get(type='current')
     level_nodes = LevelNodes.objects.filter(level=level)
     for level_node in level_nodes:
-        Node.objects.get(pk=level_node.node.pk).delete()
+        Node.objects.get(pk=level_node.node.pk, project=project).delete()
 
 #put node(add, change, delete)
 #пока что без нормального ветвления
 def node(request):
+    project = Project.objects.get(type='current')
     data = json.loads(request.body)
     node_id = data['node_id']
     level_id = data['level_id']
@@ -190,71 +228,78 @@ def node(request):
     parent_nodes, children_nodes, l_child = level_edges_nodes(level)
 
     if data['act_type'] == 'add':
-        node = Node.objects.create(name=name, description=description)
-        LevelNodes.objects.create(level=level, node=node)
+        node = Node.objects.create(name=name, description=description, project=project)
+        LevelNodes.objects.create(level=level, node=node, project=project)
         for parent_node in parent_nodes:
-            Edge.objects.create(node=node, parent=parent_node.node, level=level)
+            Edge.objects.create(node=node, parent=parent_node.node, level=level, project=project)
         for child_node in children_nodes:
-            Edge.objects.create(node=child_node.node, parent=node, level=l_child)
-        if LevelNodes.objects.filter(level=level).count()==1:
+            Edge.objects.create(node=child_node.node, parent=node, level=l_child, project=project)
+        if LevelNodes.objects.filter(level=level, project=project).count()==1:
             for parent_node in parent_nodes:
                 for child_node in children_nodes:
-                    Edge.objects.filter(node=child_node.node, parent=parent_node.node).delete()
+                    Edge.objects.filter(node=child_node.node, parent=parent_node.node, project=project).delete()
     #пока что редактировани только инфы(без перемещений в другие уровни)
     if data['act_type'] == 'edit':
-        node = Node.objects.get(pk=node_id)
+        node = Node.objects.get(pk=node_id, project=project)
         node.name = name
         node.description = description
         node.save()
+        if LevelNodes.objects.get(node=node, project=project).level == Level.objects.get(name='goal', project=project):
+            project.info = name
+            project.save()
     if data['act_type'] == 'delet':
-        node = Node.objects.get(pk=node_id)
+        node = Node.objects.get(pk=node_id, project=project)
         #может и не понадобиттся? вдруг удаяляется автоматически вместе с вершиной
-        Edge.objects.filter(node=node).delete()
-        Edge.objects.filter(parent=node).delete()
+        Edge.objects.filter(node=node, project=project).delete()
+        Edge.objects.filter(parent=node, project=project).delete()
         node.delete()
-        if LevelNodes.objects.filter(level=level).count()==0:
+        if LevelNodes.objects.filter(level=level, project=project).count()==0:
             for parent_node in parent_nodes:
                 for child_node in children_nodes:
-                    Edge.objects.create(node=child_node.node, parent=parent_node.node, level=l_child)
+                    Edge.objects.create(node=child_node.node, parent=parent_node.node, level=l_child, project=project)
     return HttpResponse('')
 
 
 def level_edges_nodes(level):
-    max_order = Level.objects.all().aggregate(Max('order'))['order__max']
+    project = Project.objects.get(type='current')
+    max_order = Level.objects.filter(project=project).aggregate(Max('order'))['order__max']
     if level.order == 2 and level.order == max_order:
-        l_parent = Level.objects.get(order=0)
-        l_child = Level.objects.get(order=1)
+        l_parent = Level.objects.get(order=0, project=project)
+        l_child = Level.objects.get(order=1, project=project)
     elif level.order == 2 :
-        l_parent = Level.objects.get(order=0)
-        l_child = Level.objects.get(order=level.order+1)
+        l_parent = Level.objects.get(order=0, project=project)
+        l_child = Level.objects.get(order=level.order+1, project=project)
     elif  level.order == 1:
-        l_parent = Level.objects.get(order=max_order)
+        l_parent = Level.objects.get(order=max_order, project=project)
         l_child = None
     elif  level.order == max_order:
-        l_parent = Level.objects.get(order=level.order-1)
-        l_child = Level.objects.get(order=1)
+        l_parent = Level.objects.get(order=level.order-1, project=project)
+        l_child = Level.objects.get(order=1, project=project)
     elif  level.order == 0:
         l_parent = None
         l_child = None
     else:
-        l_parent = Level.objects.get(order=level.order-1)
-        l_child = Level.objects.get(order=level.order+1)
-    parent_nodes = LevelNodes.objects.filter(level=l_parent)
-    children_nodes = LevelNodes.objects.filter(level=l_child)
+        l_parent = Level.objects.get(order=level.order-1, project=project)
+        l_child = Level.objects.get(order=level.order+1, project=project)
+    parent_nodes = LevelNodes.objects.filter(level=l_parent, project=project)
+    children_nodes = LevelNodes.objects.filter(level=l_child, project=project)
     return parent_nodes, children_nodes, l_child
 
 
 def order_consist(order_of_modified):
-    l = Level.objects.filter(order__gt=order_of_modified).update(order=F('order')-1)
+    project = Project.objects.get(type='current')
+    l = Level.objects.filter(order__gt=order_of_modified, project=project).update(order=F('order')-1)
 
 
 #get groups
 def groups_list(request):
-    groups = serializers.serialize('json', Group.objects.all())
+    project = Project.objects.get(type='current')
+    groups = serializers.serialize('json', Group.objects.filter(project=project))
     groups_count = {}
-    for group in Group.objects.all():
-         groups_count[group.pk] = { 'for_hierarchy': GroupNodes.objects.filter(group=group).count(),
-                                    'for_comparison': GroupNodes.objects.filter(group=group, type='for comparison form').count()}
+    for group in Group.objects.filter(project=project):
+        #project=project?
+         groups_count[group.pk] = { 'for_hierarchy': GroupNodes.objects.filter(group=group, project=project).count(),
+                                    'for_comparison': GroupNodes.objects.filter(group=group, project=project, type='for comparison form').count()}
     return HttpResponse(json.dumps({
         'groups': groups,
         'groups_count': groups_count
@@ -263,19 +308,22 @@ def groups_list(request):
 
 #put group(add, change, delete)
 def group(request):
+    project = Project.objects.get(type='current')
     data = json.loads(request.body)
     group_id = data['group_id']
     name = data['name']
     description = data['description']
     if data['act_type'] == 'add':
-        Group.objects.create(name=name, description=description)
+        g = Group.objects.create(name=name, description=description, project=project)
+        name_q = 'Если Вы считаете, что есть критерии, которые не учтены в иерархии выше, то напишите их и укажите уровень, к которому вы бы их отнесли'
+        q = Question.objects.create(group=g, name=name_q, description='special', project=project)
     if data['act_type'] == 'edit':
-        g = Group.objects.get(pk=group_id)
+        g = Group.objects.get(pk=group_id, project=project)
         g.name = name
         g.descrpition = descrpition
         g.save()
     if data['act_type'] == 'delet':
-        g = Group.objects.get(pk=group_id)
+        g = Group.objects.get(pk=group_id, project=project)
         g.delete()
         #удаление из GroupNodes?
     return HttpResponse('')
@@ -283,15 +331,16 @@ def group(request):
 
 #get groups nodes
 def group_nodes_list(request):
-    #filter на type
-    groups_nodes = serializers.serialize('json', GroupNodes.objects.all())
+    project = Project.objects.get(type='current')
+    groups_nodes = serializers.serialize('json', GroupNodes.objects.filter(project=project))
     return HttpResponse(json.dumps({
         'group_nodes': groups_nodes
     }), content_type="application/json")
 
 
 def users_answer_hierarchy(request):
-    user_nodes = serializers.serialize('json', UserNodes.objects.all())
+    project = Project.objects.get(type='current')
+    user_nodes = serializers.serialize('json', UserNodes.objects.filter(project=project))
     return HttpResponse(json.dumps({
         'user_nodes': user_nodes
     }), content_type="application/json")
@@ -299,7 +348,8 @@ def users_answer_hierarchy(request):
 
 def users_answer_comparison(request):
     user_comparison = {}
-    users = User.objects.filter(comparison_form='check')
+    project = Project.objects.get(type='current')
+    users = User.objects.filter(comparison_form='check', project=project)
     for user in users:
         user_comparison[user.pk] = create_user_answer_comparison(user);
     return HttpResponse(json.dumps({
@@ -309,9 +359,11 @@ def users_answer_comparison(request):
 
 def create_user_answer_comparison(user):
     answer = []
-    user_nodes = GroupNodes.objects.values_list('node', flat=True).filter(type='for comparison form', group=user.group)
-    goal = LevelNodes.objects.get(level=Level.objects.get(name='goal')).node
-    edges = Edge.objects.filter(parent=goal, node__in=set(user_nodes))
+    project = Project.objects.get(type='current')
+    user_nodes = GroupNodes.objects.values_list('node', flat=True).filter(type='for comparison form', group=user.group, project=project)
+    level = Level.objects.get(name='goal', project=project)
+    goal = LevelNodes.objects.get(level=level, project=project).node
+    edges = Edge.objects.filter(parent=goal, node__in=set(user_nodes), project=project)
     while len(edges.values_list('node', flat=True))>0:
         parent_edges = set(edges.values_list('parent', flat=True))
         for parent in parent_edges:
@@ -325,58 +377,62 @@ def create_user_answer_comparison(user):
                 answer_node['weight'] = Weight.objects.get(user=user, edge=edge).weight
                 answer_obj['nodes'].append(answer_node)
             answer.append(answer_obj)
-        edges = Edge.objects.filter(node__in=set(user_nodes), parent__in=set(edges.values_list('node', flat=True)))
+        edges = Edge.objects.filter(node__in=set(user_nodes), parent__in=set(edges.values_list('node', flat=True)), project=project)
     return answer
 
 
 #TODO делать ли отдельно для каждой группы?
 def group_nodes(request):
-    GroupNodes.objects.all().delete()
+    project = Project.objects.get(type='current')
+    GroupNodes.objects.filter(project=project).delete()
     data = json.loads(request.body)
     for group in data:
-        g = Group.objects.get(pk=group)
+        g = Group.objects.get(pk=group, project=project)
         for node in data[group]:
-            n = Node.objects.get(pk=node)
-            GroupNodes.objects.create(group=g, node=n, type='for hierarchy form', count=0)
+            n = Node.objects.get(pk=node, project=project)
+            GroupNodes.objects.create(group=g, node=n, type='for hierarchy form', count=0, project=project)
     return HttpResponse('')
 
 
 def chosen_group_nodes(request):
+    project = Project.objects.get(type='current')
     data = json.loads(request.body)
     nodes = data['nodes']
     group = data['group']
-    GroupNodes.objects.filter(group=group).delete()
+    GroupNodes.objects.filter(group=group, project=project).delete()
     for node in nodes:
-        n = Node.objects.get(pk=node)
-        g = Group.objects.get(pk=group)
-        GroupNodes.objects.create(group=g, node=n, type='for hierarchy form', count=0)
+        n = Node.objects.get(pk=node, project=project)
+        g = Group.objects.get(pk=group, project=project)
+        GroupNodes.objects.create(group=g, node=n, type='for hierarchy form', count=0, project=project)
     return HttpResponse('')
 
 
 #put question(add,delete,edit)
 def question(request):
+    project = Project.objects.get(type='current')
     data = json.loads(request.body)
     question_id = data['question_id']
     group_id = data['group_id']
     name = data['name']
     descrpition = data['descrpition']
     if data['act_type'] == 'add':
-        g = Group.objects.get(pk=group_id)
-        Question.objects.create(group=g, name=name, description=description)
+        g = Group.objects.get(pk=group_id, project=project)
+        Question.objects.create(group=g, name=name, description=description, project=project)
     if data['act_type'] == 'edit':
-        q = Question.objects.get(pk=question_id)
+        q = Question.objects.get(pk=question_id, project=project)
         q.name = name
         q.description = description
         q.save()
     if data['act_type'] == 'delet':
-        q = Question.objects.get(pk=question_id)
+        q = Question.objects.get(pk=question_id, project=project)
         q.delete()
     return HttpResponse('')
 
 
 #get all question
 def group_question_list(request):
-    group_questions = serializers.serialize('json', Question.objects.all())
+    project = Project.objects.get(type='current')
+    group_questions = serializers.serialize('json', Question.objects.filter(project=project))
     return HttpResponse(json.dumps({
         'group_questions': group_questions
     }), content_type="application/json")
@@ -384,6 +440,7 @@ def group_question_list(request):
 
 #put user(add,delete,edit)
 def user(request):
+    project = Project.objects.get(type='current')
     data = json.loads(request.body)
     user_id = data['user_id']
     name = data['name']
@@ -393,25 +450,26 @@ def user(request):
     confidence1 = 0
     confidence2 = 0
     if data['act_type'] == 'add':
-        group = Group.objects.get(pk=group_id)
-        User.objects.create(name=name, description='', email=email, id_hash='', group=group, confidence1=confidence1, confidence2=confidence2)
+        group = Group.objects.get(pk=group_id, project=project)
+        User.objects.create(name=name, description='', email=email, id_hash='', group=group, confidence1=confidence1, confidence2=confidence2, project=project)
     if data['act_type'] == 'edit':
-        g = Group.objects.get(pk=group_id)
-        u = User.objects.get(pk=user_id)
+        g = Group.objects.get(pk=group_id, project=project)
+        u = User.objects.get(pk=user_id, project=project)
         u.name = name
         u.description = description
         u.email = email
         u.group = g
         u.save()
     if data['act_type'] == 'delet':
-        u = User.objects.get(pk=user_id)
+        u = User.objects.get(pk=user_id, project=project)
         u.delete()
     return HttpResponse('')
 
 
 #get all users
 def users_list(request):
-    users = serializers.serialize('json', User.objects.all())
+    project = Project.objects.get(type='current')
+    users = serializers.serialize('json', User.objects.filter(project=project))
     return HttpResponse(json.dumps({
         'users': users
     }), content_type="application/json")
@@ -419,56 +477,62 @@ def users_list(request):
 
 #put all questions
 def questions(request):
-    Question.objects.all().delete()
+    project = Project.objects.get(type='current')
+    Question.objects.filter(project=project).delete()
     data = json.loads(request.body)
     for question in data:
-        print >> sys.stderr, question
         n = question['name']
         d = question['description']
         g_id = question['group']
-        g = Group.objects.get(pk=g_id)
-        Question.objects.create(group=g, name=n, description=d)
+        g = Group.objects.get(pk=g_id, project=project)
+        Question.objects.create(group=g, name=n, description=d, project=project)
     return HttpResponse('')
 
 
 #send email !
 def email(request):
+    project = Project.objects.get(type='current')
     data = json.loads(request.body)
     user_id = data['user_id']
     text = data['text']
     act_type = data['act_type']
-    user = User.objects.get(pk=user_id)
-    user.id_hash = hash_id(user_id)
+    user = User.objects.get(pk=user_id, project=project)
+    str_id = str(user_id) + str(project.pk)
+    user.id_hash = hash_id(str_id)
     if act_type == 'send_email_hierarchy':
-        header = 'Исследование1'
+        header = 'Исследование: первый этап'
         url = request.build_absolute_uri(reverse("ahp.views.form_for_participant", kwargs={'hash_user_id': user.id_hash}))
-        text = data['text'] + '    ' + url
+        word = u'ссылке'
+        to_href = '<a href="'+url+'">'+word+'</a>'
+        text = data['text']
+        text = text.replace(word, to_href)
         email = user.email
         send_email(header, text, email)
         user.hierarchy_form = 'email'
     if act_type == 'send_email_comparison':
-        header = 'Исследование2'
+        header = 'Исследование: второй этап'
         url = request.build_absolute_uri(reverse("ahp.views.form_for_comparison", kwargs={'hash_user_id': user.id_hash}))
-        text = data['text'] + '    ' + url
+        word = u'ссылке'
+        to_href = '<a href="'+url+'">'+word+'</a>'
+        text = data['text']
+        text = text.replace(word, to_href)
         email = user.email
         send_email(header, text, email)
-        # if пиьсмо прекрасно отправлено
         user.comparison_form = 'email'
     user.save()
     return HttpResponse('')
 
 
 def hash_id(id):
-    hash_str = hashlib.sha1(str(id)).hexdigest()
+    hash_str = hashlib.sha1(id).hexdigest()
     hash = hash_str[-10:]
     return hash
 
 
 def send_email(header, text, email):
     try:
-        # заголовок,  текст,  адрес рассылки,  адрес получателя,  и непоятный параметр
         print >> sys.stderr, 'TRY SEND EMAIL TO  '+'email: '+email+'  WITH TEXT  '+text
-        send_mail(header, text, 'qjkzzz@gmail.com', [email], fail_silently=False)
+        send_mail(header, '', 'qjkzzz@gmail.com', [email], fail_silently=False, html_message=text)
     except BadHeaderError:
         return HttpResponse('Invalid header found.')
 
@@ -476,22 +540,22 @@ def send_email(header, text, email):
 #может быть вообще не нужен save
 #сохранение выбранных вершин для всех групп
 def chosen_group_nodes_for_comparison(request):
+    project = Project.objects.get(type='current')
     data = json.loads(request.body)
     group = data['group']
     nodes = data['nodes']
-    GroupNodes.objects.filter(group=group, type='for comparison form').update(type='for hierarchy form')
+    GroupNodes.objects.filter(group=group, type='for comparison form', project=project).update(type='for hierarchy form')
     for node in nodes:
-        g = Group.objects.get(pk=group)
-        n = Node.objects.get(pk=node)
-        group_node = GroupNodes.objects.get(group=g, node=n)
+        g = Group.objects.get(pk=group, project=project)
+        n = Node.objects.get(pk=node, project=project)
+        group_node, created = GroupNodes.objects.get_or_create(group=g, node=n, project=project, defaults={'type': '', 'count':0})
+        #group_node = GroupNodes.objects.create(group=g, node=n, project=project, type='')
         group_node.type = 'for comparison form'
         group_node.save()
     return HttpResponse('')
 
 
 def form_for_comparison(request, hash_user_id):
-    #hash_user_id = '809ffca6e3'
-    #TODO get or 404
     #TODO - делать ли кнопку назад? (если да, то в GET считываем из БД, тогда в БД добавить поле с view и наверное даже новую таблицу(потому что пары формируются при обращении, в БД только вектор)
     line = [{'val':9, 'view':9, 'color': '#275E8C'},
             {'val':8, 'view':8, 'color': '#275E8C'},
@@ -512,6 +576,7 @@ def form_for_comparison(request, hash_user_id):
             {'val':1.0/9, 'view':9, 'color': '#275E8C'},
             ]
     user = User.objects.get(id_hash=hash_user_id)
+    project = user.project
     user_group = user.group
     pairwise_list = data_for_comparison(user_group)
     pairwise_list.insert(0,'help')
@@ -530,8 +595,9 @@ def form_for_comparison(request, hash_user_id):
         if user.comparison_form == 'timeout':
             return HttpResponse('')
         else:
-            node_goal = LevelNodes.objects.get(level=Level.objects.get(name='goal')).node
-            goal = Node.objects.get(pk=node_goal.pk)
+            level = Level.objects.get(name='goal', project=project)
+            node_goal = LevelNodes.objects.get(level=level, project=project).node
+            goal = Node.objects.get(pk=node_goal.pk, project=project)
             messages = ''
             action = ''
             return render_to_response('ahp/pairwise_comparison_form.html', {'bunches': bunches, 'line': line, 'messages': messages, 'action': action, 'user': user, 'goal': goal })
@@ -569,8 +635,9 @@ def form_for_comparison(request, hash_user_id):
 
 
 def save_and_next(node_list, vector_priority, user, parent, bunches, request):
+    project = Project.objects.get(type='current')
     for index, node in enumerate(node_list):
-        edge = Edge.objects.get(parent=parent, node=node)
+        edge = Edge.objects.get(parent=parent, node=node, project=project)
         weight = Weight.objects.update_or_create(edge=edge, user=user, defaults=dict(weight=vector_priority[index]))
     if bunches.has_next():
         user.comparison_form = str(bunches.number)
@@ -651,18 +718,25 @@ def revision_of_judgments(Matrix, vector_priority):
 
 
 def data_for_comparison(group):
-    group_nodes_ids = GroupNodes.objects.values_list('node', flat=True).filter(type='for comparison form', group=group)
-    ids = set(group_nodes_ids) | set('1')
-    edges = Edge.objects.all()
-    levels_queryset = Level.objects.order_by('order')
+    project = Project.objects.get(type='current')
+    group_nodes_ids = list(GroupNodes.objects.values_list('node', flat=True).filter(type='for comparison form', group=group, project=project))
+    level_goal = Level.objects.get(name='goal', project=project)
+    goal = LevelNodes.objects.get(level=level_goal, project=project).node
+    group_nodes_ids.append(goal.pk)
+    ids = set(group_nodes_ids)
+    edges = Edge.objects.filter(project=project)
+    levels_queryset = Level.objects.filter(project=project).order_by('order')
     levels = list(levels_queryset)
     alt_level = levels.pop(1)
-    levels.append(alt_level)
+    if alt_level.type != 'absolute_value':
+        levels.append(alt_level)
+    else:
+        levels.pop()
     pairwise_list = []
     for level in levels:
-        nodes = LevelNodes.objects.filter(node__in=set(ids), level=level)
+        nodes = LevelNodes.objects.filter(node__in=set(ids), level=level, project=project)
         for node in nodes:
-            children_nodes = Edge.objects.filter(parent=node.node, node__in=set(ids))
+            children_nodes = Edge.objects.filter(parent=node.node, node__in=set(ids), project=project)
             if len(children_nodes)>1:
                 pairwise_bunch = {}
                 pairwise_bunch['parent'] = node.node
@@ -687,7 +761,8 @@ def pairwise_generation(nodes):
 
 
 def user_confidence(user):
-    other_users = User.objects.filter(group=user.group, comparison_form='check')
+    project = Project.objects.get(type='current')
+    other_users = User.objects.filter(group=user.group, comparison_form='check', project=project)
     other_sum = other_users.aggregate(Sum('confidence2'))
     sum = other_sum['confidence2__sum']
     if len(other_users)>0:
@@ -702,14 +777,16 @@ def user_confidence(user):
 
 
 def standard_deviation(group):
-    group_nodes = GroupNodes.objects.filter(group=group)
+    project = Project.objects.get(type='current')
+    group_nodes = GroupNodes.objects.filter(group=group, project=project)
     #except new user? -no
-    group_users = User.objects.filter(group=group, comparison_form='check')
+    group_users = User.objects.filter(group=group, comparison_form='check', project=project)
     list_of_standard_deviation = create_list_of_standard_deviation(group_nodes, group_users)
     return ''
 
 
 def global_priority_calculation(request):
+    project = Project.objects.get(type='current')
     data = json.loads(request.body)
     groups = data['groups']
     checked_users = data['users']
@@ -718,8 +795,9 @@ def global_priority_calculation(request):
     nodes_list = []
     users = []
     for group in groups:
-        group_nodes = GroupNodes.objects.filter(group=group['id'])
-        group_users = User.objects.filter(group=group['id'], comparison_form='check', pk__in=set(checked_users))
+        #type = for_comparison???
+        group_nodes = GroupNodes.objects.filter(group=group['id'], project=project, type = 'for comparison form')
+        group_users = User.objects.filter(group=group['id'], comparison_form='check', pk__in=set(checked_users), project=project)
         group_sum = group_users.aggregate(Sum('confidence2'))
         for group_user in group_users:
             #print >> sys.stderr, 'group_sum  ', (float(group['priority'])/float(100)) * (float(group_user.confidence2)/float(group_sum['confidence2__sum']))
@@ -739,14 +817,15 @@ def global_priority_calculation(request):
 
 
 def create_list_of_standard_deviation(group_nodes, group_users):
+    project = Project.objects.get(type='current')
     list_of_standard_deviation = []
-    level = Level.objects.get(name='alternatives')
-    edges = Edge.objects.filter(level=level, node__in=set(group_nodes))
+    level = Level.objects.get(name='alternatives', project=project)
+    edges = Edge.objects.filter(level=level, node__in=set(group_nodes), project=project)
     Matrix = create_standard_deviation_Matrix(edges, group_users)
     list_of_standard_deviation.append(Matrix)
     while len(set(edges.values_list('parent', flat=True)))>1:
         groups_edges = edges.filter(node__in=set(group_nodes))
-        parent_edges = Edge.objects.filter(node__in=set(groups_edges.values_list('parent', flat=True)))
+        parent_edges = Edge.objects.filter(node__in=set(groups_edges.values_list('parent', flat=True)), project=project)
         Matrix = create_standard_deviation_Matrix(parent_edges, group_users)
         list_of_standard_deviation.append(Matrix)
         edges = parent_edges
@@ -778,18 +857,15 @@ def create_standard_deviation_Matrix():
     return sum_Matrix
 
 
-#везде передавать users или group
-#по group формируем вершины, по users - веса
-#доделать это и начать засовывать ангулар
-
 def loop_tree(nodes_list, users_list, groups_list):
-    level = Level.objects.get(name='alternatives')
-    alternatives = Edge.objects.filter(level=level, node__in=set(nodes_list))
+    project = Project.objects.get(type='current')
+    level = Level.objects.get(name='alternatives', project=project)
+    alternatives = Edge.objects.filter(level=level, node__in=set(nodes_list), project=project)
     edges = alternatives
     Matrix = create_weigth_Matrix(edges, users_list)
     while len(set(edges.values_list('parent', flat=True)))>1:
         groups_edges = edges.filter(node__in=set(nodes_list))
-        parent_edges = Edge.objects.filter(node__in=set(groups_edges.values_list('parent', flat=True)))
+        parent_edges = Edge.objects.filter(node__in=set(groups_edges.values_list('parent', flat=True)), project=project)
         parent_Matrix = create_weigth_Matrix(parent_edges, users_list)
         new_Matrix = numpy.dot(Matrix, parent_Matrix)
         Matrix = new_Matrix
@@ -812,7 +888,6 @@ def create_weigth_Matrix(edges, users):
                 try:
                     weight = pow(Weight.objects.get(edge=edge, user=user['id']).weight, user['group_priority'])
                 except Weight.DoesNotExist:
-                    #weight = 1.0/len(nodes)
                     weight = pow(0.001, user['group_priority'])
                 #print >> sys.stderr,'[index_node][index_parent]    ', index_node, '  ',index_parent
                 #print >> sys.stderr,' weight    ', weight
@@ -826,21 +901,50 @@ def create_weigth_Matrix(edges, users):
 
 
 def user_confidence_list(request):
-    users = serializers.serialize('json', User.objects.all())
+    project = Project.objects.get(type='current')
+    users = serializers.serialize('json', User.objects.filter(project=project))
     return HttpResponse(json.dumps({
         'users': users
     }), content_type="application/json")
 
 
 def groups_votes(request):
-    groups = Group.objects.all();
+    project = Project.objects.get(type='current')
+    groups = Group.objects.filter(project=project);
     group_votes = [];
     for group in groups:
         group_votes.append({
             'group': group.pk,
-            'hierarchy_email': int(User.objects.filter(group=group, hierarchy_form='email').count()) + int(User.objects.filter(group=group, hierarchy_form='check').count()),
-            'comparison_email': int(User.objects.filter(group=group, comparison_form='email').count()) + int(User.objects.filter(group=group, comparison_form='check').count())
+            'hierarchy_email': int(User.objects.filter(group=group, hierarchy_form='email', project=project).count()) + int(User.objects.filter(group=group, hierarchy_form='check', project=project).count()),
+            'comparison_email': int(User.objects.filter(group=group, comparison_form='email', project=project).count()) + int(User.objects.filter(group=group, comparison_form='check', project=project).count())
         })
     return HttpResponse(json.dumps({
         'group_votes': group_votes
     }), content_type="application/json")
+
+
+def alt_type(request):
+    project = Project.objects.get(type='current')
+    data = json.loads(request.body)
+    level_id = data['level_id']
+    type = data['type']
+    level = Level.objects.get(pk=level_id, project=project)
+    level.type = type
+    level.save()
+    return  HttpResponse('')
+
+
+def save_absolute_value(request):
+    project = Project.objects.get(type='current')
+    data = json.loads(request.body)
+    alt_edges = data['alt_edges']
+    for crit in alt_edges:
+        sum = 0
+        for alt in alt_edges[crit]:
+            sum = sum + float(alt['value'])
+        for alt in alt_edges[crit]:
+            edge = Edge.objects.get(project=project, parent=Node.objects.get(project=project, pk=crit), node=Node.objects.get(project=project, pk=alt['alt']))
+            weight = float(alt['value'])/float(sum)
+            for user in User.objects.filter(project=project):
+                Weight.objects.update_or_create(user=user, edge=edge, defaults=dict(weight=weight))
+    return  HttpResponse('')

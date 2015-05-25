@@ -81,7 +81,7 @@
                                     <div class="small-title">
                                         {{level_hash[level].name}}
                                     </div>
-                                    <div  ng-repeat="(node_key, node) in level_nodes_list[level]" ng-if="isForShow(chosen_group, node)" class="list-group-item">
+                                    <div  ng-repeat="(node_key, node) in level_nodes_list[level]" class="list-group-item">
                                         <label>
                                             <input type="checkbox" checklist-model="group_nodes_for_comparison_list[chosen_group]" checklist-value="node" ng-disabled="groups_votes[chosen_group].comparison_email>0">
                                             {{node_hash[node].name}}
@@ -95,7 +95,7 @@
                         <div class="col-md-6">
                             <div class="h3">Альтернативы:</div>
                             <div class="list-group level-block">
-                                <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" ng-if="isForShow(chosen_group, node)" class="list-group-item">
+                                <div ng-repeat="(node_key, node) in level_nodes_list[level_order[1]]" class="list-group-item">
                                     <label>
                                         <input type="checkbox" checklist-model="group_nodes_for_comparison_list[chosen_group]" checklist-value="node" ng-disabled="groups_votes[chosen_group].comparison_email>0">
                                         {{node_hash[node].name}}
