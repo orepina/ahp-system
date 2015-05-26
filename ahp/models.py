@@ -55,7 +55,7 @@ class UserNodes(models.Model):
     user = models.ForeignKey(User)
     project = models.ForeignKey(Project)
     def __unicode__(self):
-        return self.user
+        return self.user.name
 
 
 class GroupNodes(models.Model):
