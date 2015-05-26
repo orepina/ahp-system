@@ -76,7 +76,7 @@ class Question(models.Model):
 class UserInfo(models.Model):
     user = models.ForeignKey(User)
     question = models.ForeignKey(Question)
-    answer = models.CharField(max_length=30, default='')
+    answer = models.CharField(max_length=200, default='')
 
 
 class LevelNodes(models.Model):

@@ -691,7 +691,7 @@ def calculate_weigth(Matrix):
         OS = IS/SS[size]
     else:
         OS = 0
-    if OS > 0.3:
+    if OS > 0.2:
         isRecalculation = True
         revision_of_judgments(Matrix, vector_priority)
     else:
