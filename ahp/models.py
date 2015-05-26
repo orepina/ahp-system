@@ -66,7 +66,7 @@ class GroupNodes(models.Model):
 
 class Question(models.Model):
     group = models.ForeignKey(Group)
-    name = models.CharField(max_length=30, default='')
+    name = models.CharField(max_length=200, default='')
     description = models.CharField(max_length=30, default='')
     project = models.ForeignKey(Project)
     def __unicode__(self):
