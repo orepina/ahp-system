@@ -245,6 +245,7 @@ label{
     position: absolute;
     right: 200px;
     font-size: 17px;
+    width: 200px;
 }
 
 .user-status .btn,
