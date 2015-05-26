@@ -24,7 +24,7 @@
                     {% if forloop.last %}
                         <br>
                         <h3>{{ level.name }}</h3>
-                        Выберите возможные исходы, которые Вы смогли бы оценить в дальнейшем
+                        Выберите возможные исходы (сценарии развития), которые Вы смогли бы оценить в дальнейшем
                         <div class="list-group">
                             {% for node in level.nodes %}
                                 <a href="#" class="list-group-item">
@@ -42,6 +42,9 @@
                         <div class="panel panel-default">
                             <div class="panel-heading">
                                 <h3 class="panel-title">{{ level.name }}</h3>
+                                {% if level.description %}
+                                    <small>({{ level.description }})</small>
+                                {% endif %}
                             </div>
                             <div class="list-group">
                             {% for node in level.nodes %}
