@@ -12,9 +12,9 @@ SECRET_KEY = '*-etb_au@(xh5di0bnn7a5z$2t8ue*40oml^zridkv8aji-la0'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-TEMPLATE_DEBUG = True
+TEMPLATE_DEBUG = False
 TEMPLATE_DIRS = [os.path.join(BASE_DIR, 'templates')]
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['orepin.pythonanywhere.com']
 
 
 # Application definition
