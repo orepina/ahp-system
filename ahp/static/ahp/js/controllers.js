@@ -680,6 +680,4 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
             .error(function(data, status, headers, config){});
     }
 
-
-
 }
