@@ -502,7 +502,7 @@ def email(request):
     level_goal = Level.objects.get(name='goal', project=project)
     goal = LevelNodes.objects.get(level=level_goal, project=project).node
     if act_type == 'send_email_hierarchy':
-        header = 'Исследование "'+goal+'": первый этап'
+        header = 'Исследование "'+str(goal)+'": первый этап'
         url = request.build_absolute_uri(reverse("ahp.views.form_for_participant", kwargs={'hash_user_id': user.id_hash}))
         word = u'ссылке'
         to_href = '<a href="'+url+'">'+word+'</a>'
@@ -512,7 +512,7 @@ def email(request):
         send_email(header, text, email)
         user.hierarchy_form = 'email'
     if act_type == 'send_email_comparison':
-        header = 'Исследование "'+goal+'": второй этап'
+        header = 'Исследование "'+str(goal)+'": второй этап'
         url = request.build_absolute_uri(reverse("ahp.views.form_for_comparison", kwargs={'hash_user_id': user.id_hash}))
         word = u'ссылке'
         to_href = '<a href="'+url+'">'+word+'</a>'
