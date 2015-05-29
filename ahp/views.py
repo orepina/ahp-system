@@ -580,7 +580,7 @@ def form_for_comparison(request, hash_user_id):
     user = User.objects.get(id_hash=hash_user_id)
     project = user.project
     user_group = user.group
-    pairwise_list = data_for_comparison(user_group)
+    pairwise_list = data_for_comparison(user_group, project) #+
     pairwise_list.insert(0,'help')
 
     paginator = Paginator(pairwise_list, 1)
@@ -619,7 +619,7 @@ def form_for_comparison(request, hash_user_id):
                 if 'auto_revision' in request.POST:
                     user.confidence1 = user.confidence1 + 1
                     user.save()
-                    return save_and_next(node_list, vector_priority, user, pairwise_list[right_number]['parent'], bunches, request)
+                    return save_and_next(node_list, vector_priority, user, pairwise_list[right_number]['parent'], bunches, request)#+
                 if 'next' in request.POST:
                     if isRecalculation:
                         for_message = ''
@@ -637,7 +637,7 @@ def form_for_comparison(request, hash_user_id):
 
 
 def save_and_next(node_list, vector_priority, user, parent, bunches, request):
-    project = Project.objects.get(type='current')
+    project = user.project
     for index, node in enumerate(node_list):
         edge = Edge.objects.get(parent=parent, node=node, project=project)
         weight = Weight.objects.update_or_create(edge=edge, user=user, defaults=dict(weight=vector_priority[index]))
@@ -684,7 +684,6 @@ def calculate_weigth(Matrix):
     lyambd_max = eigenvalues.max()
     index_max = eigenvalues.argmax()
     eigenvector =  eigenvectors[:,index_max].real
-    #вычисление суммы другое(сумма квадратов под корнем)
     norma = eigenvector.sum()
     vector_priority =  eigenvector/eigenvector.sum()
     size = len(vector_priority)
@@ -719,8 +718,7 @@ def revision_of_judgments(Matrix, vector_priority):
     calculate_weigth(Matrix)
 
 
-def data_for_comparison(group):
-    project = Project.objects.get(type='current')
+def data_for_comparison(group, project):
     group_nodes_ids = list(GroupNodes.objects.values_list('node', flat=True).filter(type='for comparison form', group=group, project=project))
     level_goal = Level.objects.get(name='goal', project=project)
     goal = LevelNodes.objects.get(level=level_goal, project=project).node
@@ -763,8 +761,7 @@ def pairwise_generation(nodes):
 
 
 def user_confidence(user):
-    project = Project.objects.get(type='current')
-    other_users = User.objects.filter(group=user.group, comparison_form='check', project=project)
+    other_users = User.objects.filter(group=user.group, comparison_form='check', project=user.project)
     other_sum = other_users.aggregate(Sum('confidence2'))
     sum = other_sum['confidence2__sum']
     if len(other_users)>0:
