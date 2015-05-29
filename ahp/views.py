@@ -54,6 +54,7 @@ def projects(request):
                 p = Project.objects.get(pk=project_id)
                 p.type = 'current'
                 p.save()
+                edge_fix()
             url = "/ahp"
             return redirect(url)
         else:
@@ -87,6 +88,7 @@ def login(request):
 
 def popup(request):
     return render(request, 'ahp/popup.html')
+
 
 def group_questions(request):
     return render(request, 'ahp/group_questions.html')
@@ -950,3 +952,9 @@ def save_absolute_value(request):
             for user in User.objects.filter(project=project):
                 Weight.objects.update_or_create(user=user, edge=edge, defaults=dict(weight=weight))
     return  HttpResponse('')
+
+def edge_fix():
+    edges = Edge.objects.filter (project = Project.objects.get(type='current'))
+    for edge in edges:
+        if edges.filter(parent=edge.parent, node=edge.node).count()>1:
+            edges.filter(parent=edge.parent, node=edge.node)[0].delete
