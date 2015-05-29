@@ -43,20 +43,22 @@ input[type="radio"]:checked+label{
 }
 
 .pairwise_nodes {
-    width: 100%;
-    display: block;
-    height: 60px;
-    padding: 0 60px;
-    position: relative;
-    z-index: 100;
-}
+  width: 100%;
+  display: block;
+  height: 100px;
+  padding: 0 60px;
+  position: relative;
+  z-index: 100;
+ }
 
 .pairwise_left_node {
     float: left;
+    width: 50%;
 }
 
 .pairwise_right_node {
     float: right;
+    width: 50%;
 }
 
 .left {
