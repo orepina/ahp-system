@@ -957,4 +957,5 @@ def edge_fix():
     edges = Edge.objects.filter (project = Project.objects.get(type='current'))
     for edge in edges:
         if edges.filter(parent=edge.parent, node=edge.node).count()>1:
-            edges.filter(parent=edge.parent, node=edge.node)[0].delete
+            edges.filter(parent=edge.parent, node=edge.node)[0].delete()
+
