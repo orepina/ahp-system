@@ -320,7 +320,7 @@ def group(request):
     if data['act_type'] == 'edit':
         g = Group.objects.get(pk=group_id, project=project)
         g.name = name
-        g.descrpition = descrpition
+        g.description = description
         g.save()
     if data['act_type'] == 'delet':
         g = Group.objects.get(pk=group_id, project=project)
@@ -414,7 +414,7 @@ def question(request):
     question_id = data['question_id']
     group_id = data['group_id']
     name = data['name']
-    descrpition = data['descrpition']
+    description = data['description']
     if data['act_type'] == 'add':
         g = Group.objects.get(pk=group_id, project=project)
         Question.objects.create(group=g, name=name, description=description, project=project)

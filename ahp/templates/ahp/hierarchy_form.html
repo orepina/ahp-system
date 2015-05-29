@@ -24,6 +24,7 @@
                     {% if forloop.last %}
                         <br>
                         <h3>{{ level.name }}</h3>
+                {% ifequal question.description 'absolute_value'%}
                         Выберите возможные исходы (сценарии развития), которые Вы смогли бы оценить в дальнейшем
                         <div class="list-group">
                             {% for node in level.nodes %}
