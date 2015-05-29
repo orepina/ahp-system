@@ -54,7 +54,7 @@ def projects(request):
                 p = Project.objects.get(pk=project_id)
                 p.type = 'current'
                 p.save()
-                edge_fix()
+                #edge_fix()
             url = "/ahp"
             return redirect(url)
         else:
