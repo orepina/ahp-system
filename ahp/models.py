@@ -95,7 +95,7 @@ class Edge(models.Model):
     level = models.ForeignKey(Level)
     project = models.ForeignKey(Project)
     def __unicode__(self):
-        return self.node.name
+        return self.node.name,' ', self.parent.name
 
 
 class Weight(models.Model):
