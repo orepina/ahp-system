@@ -376,7 +376,11 @@ def create_user_answer_comparison(user):
             for edge in bunch_edges:
                 answer_node = {}
                 answer_node['node'] = edge.node.pk
-                answer_node['weight'] = Weight.objects.get(user=user, edge=edge).weight
+                try:
+                    weight = Weight.objects.get(user=user, edge=edge).weight
+                except Weight.DoesNotExist:
+                    weight = 0
+                answer_node['weight'] = weight
                 answer_obj['nodes'].append(answer_node)
             answer.append(answer_obj)
         edges = Edge.objects.filter(node__in=set(user_nodes), parent__in=set(edges.values_list('node', flat=True)), project=project)
