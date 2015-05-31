@@ -15,7 +15,7 @@
             </tr>
             <tr ng-repeat="(key, crit) in alt_edges" ng-if="node_priority[key]>=0">
                 <td>
-                    &nbsp;&nbsp;&nbsp;&nbsp;{{node_hash[key].name}}
+                    &nbsp;&nbsp;&nbsp;{{node_hash[key].name}}
                 </td>
                 <td ng-repeat="obj in crit">
                     <input type="text" ng-model="obj.value" class="form-control"/>
