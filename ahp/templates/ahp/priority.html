@@ -77,7 +77,7 @@
                     <div class="small-title">
                         {{level_hash[level].name}}
                     </div>
-                    <div  ng-repeat="(node_key, node) in level_nodes_list[level]" class="list-group-item" ng-if="node_priority[node]">
+                    <div  ng-repeat="(node_key, node) in level_nodes_list[level]" class="list-group-item" ng-if="node_priority[node]!=Nan">
                         {{node_hash[node].name}}
                         <div class="progress">
                         <div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: {{node_priority[node]*100}}%;">
