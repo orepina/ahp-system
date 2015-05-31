@@ -861,7 +861,7 @@ def create_standard_deviation_Matrix():
             sum_Matrix[index_node][index_parent] = pow(sum_Matrix[index_node][index_parent]/(len(user)-1), 0.5)
     return sum_Matrix
 
-
+"""
 def loop_tree(nodes_list, users_list, groups_list):
     project = Project.objects.get(type='current')
     level = Level.objects.get(name='alternatives', project=project)
@@ -879,6 +879,32 @@ def loop_tree(nodes_list, users_list, groups_list):
     alternatives = list(set(alternatives.values_list('node', flat=True)))
     for index, alternative in enumerate(alternatives):
         result[alternative] = Matrix.item((index))
+    return result
+"""
+
+def loop_tree(nodes_list, users_list, groups_list):
+    project = Project.objects.get(type='current')
+    levels_queryset = Level.objects.filter(project=project).order_by('order')
+    levels = list(levels_queryset)
+    alt_level = levels.pop(1)
+    levels.append(alt_level)
+    goal = levels.pop(0)
+    result = {}
+    for level in levels:
+        #level = Level.objects.get(name='alternatives', project=project)
+        least_level = Edge.objects.filter(level=level, node__in=set(nodes_list), project=project)
+        edges = least_level
+        Matrix = create_weigth_Matrix(edges, users_list)
+        while len(set(edges.values_list('parent', flat=True)))>1:
+            groups_edges = edges.filter(node__in=set(nodes_list))
+            parent_edges = Edge.objects.filter(node__in=set(groups_edges.values_list('parent', flat=True)), project=project)
+            parent_Matrix = create_weigth_Matrix(parent_edges, users_list)
+            new_Matrix = numpy.dot(Matrix, parent_Matrix)
+            Matrix = new_Matrix
+            edges = parent_edges
+        least_level = list(set(least_level.values_list('node', flat=True)))
+        for index, node in enumerate(least_level):
+            result[node] = Matrix.item((index))
     return result
 
 
@@ -956,6 +982,7 @@ def save_absolute_value(request):
             for user in User.objects.filter(project=project):
                 Weight.objects.update_or_create(user=user, edge=edge, defaults=dict(weight=weight))
     return  HttpResponse('')
+
 
 def edge_fix():
     edges = Edge.objects.filter (project = Project.objects.get(type='current'))

@@ -61,11 +61,32 @@
                     {{node_hash[node].name}}
                     <div class="progress">
                         <div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: {{result[node]*100}}%;">
-                            {{Math.round(result[node]*1000)/10}}
+                            {{Math.round(node_priority[node]*1000)/10}}
                         </div>
                     </div>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                </div>
+            </div>
+
+            <div class="title-block">
+                Критерии
+            </div>
+            <div class="crit-block" >
+                <div ng-repeat="level in level_order" ng-if="$index > 1" class="level-block">
+                    <div class="small-title">
+                        {{level_hash[level].name}}
+                    </div>
+                    <div  ng-repeat="(node_key, node) in level_nodes_list[level]" class="list-group-item">
+                        {{node_hash[node].name}}
+                        <div class="progress">
+                        <div class="progress-bar" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100" style="width: {{result[node]*100}}%;">
+                            {{Math.round(node_priority[node]*1000)/10}}
+                        </div>
+                    </div>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                    </div>
                 </div>
             </div>
             <button ng-click="calculate()" ng-show="calculated" class="btn btn-success btn-block">Анализ результатов</button>

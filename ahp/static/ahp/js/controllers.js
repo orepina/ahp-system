@@ -581,6 +581,7 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
         $scope.level_order = [];
         $scope.level_hash = {};
         $scope.result = {};
+        $scope.all_result = {};
         $scope.type = '';
         $scope.group_priority = {};
         $scope.show_priority = false;
@@ -589,6 +590,7 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
     };
 
     $scope.initResult = function() {
+
         for (var i=0;i<$scope.level_nodes_list[$scope.level_order[1]].length;i++) {
             $scope.result[$scope.level_nodes_list[$scope.level_order[1]][i]]=0;
         }
@@ -643,6 +645,7 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
             }).error(function(data, status, headers, config){})
         ajaxFactory.getRequest('common_hierarchy', '', '')
             .success(function(data, status, headers, config) {
+                $scope.node_priority = updateFactory.updateNodePriority(data.nodes);
                 $scope.node_hash = updateFactory.updateNodeHash(data.nodes);
                 $scope.level_hash = updateFactory.updateLevelHash(data.levels);
                 $scope.level_order = updateFactory.updateLevelOrder(data.levels);
@@ -663,7 +666,7 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
 
         ajaxFactory.postRequest('global_priority', {groups: group_list, users: $scope.checked_user_list})
             .success(function(data, status, headers, config) {
-                    $scope.result = data.result;
+                    $scope.node_priority = data.result;
                     $scope.calculated = true;
             }).error(function(data, status, headers, config){});
     };

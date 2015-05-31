@@ -33,6 +33,15 @@ function updateFactory() {
             return node_hash;
         },
 
+        updateNodePriority: function(data) {
+            var temp = JSON.parse(data),
+                node_priority = {};
+            for (var i=0; i<temp.length; i++){
+                node_priority[temp[i].pk] = 0;
+            }
+            return node_priority;
+        },
+
         updateLevelHash: function(data) {
             var temp = JSON.parse(data),
                 level_hash = {};
