@@ -99,7 +99,6 @@ function groupQuestionController( $scope, ajaxFactory, updateFactory ) {
     $scope.init = function() {
         $scope.act_type = "";
        // $scope.group_question_list = {};//уровни с вершинами  groupQuestion['1'] = [n1]
-        $scope.questions = [];
         $scope.edit = false;
         $scope.add = false;
         $scope.question_name = '';
@@ -111,6 +110,7 @@ function groupQuestionController( $scope, ajaxFactory, updateFactory ) {
     $scope.update = function() {
         ajaxFactory.getRequest('group_question_list', '', '')
             .success(function (data, status, headers, config) {
+                $scope.questions = [];
                // $scope.group_question_list = updateFactory.updateGroupQuestionList(data.group_questions).list;
                 $scope.questions = updateFactory.updateQuestionList(data.group_questions);
             })
@@ -188,13 +188,7 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
     $scope.init = function() {
         $scope.initialisation = false;
         $scope.graphics = '';
-        $scope.edges_list = [];
-        $scope.group_nodes_list = {};
-        $scope.adjacency_list = {};
-        $scope.node_hash = {};
-        $scope.level_hash = {};
-        $scope.level_nodes_list = {};
-        $scope.level_order = [];
+
         $scope.message = '';
         $scope.act_type = '';
         $scope.save_nodes = '';
@@ -206,6 +200,12 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
     //get exist users with email send
         ajaxFactory.getRequest('common_hierarchy', '', '')
             .success(function(data, status, headers, config) {
+                $scope.edges_list = [];
+                $scope.node_hash = {};
+                $scope.level_hash = {};
+                $scope.level_nodes_list = {};
+                $scope.level_order = [];
+
                 $scope.node_hash = updateFactory.updateNodeHash(data.nodes);
                 $scope.edges_list = updateFactory.updateEdgesList(data.edges);
                 $scope.level_hash = updateFactory.updateLevelHash(data.levels);
@@ -216,6 +216,7 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
             .error(function(data, status, headers, config){});
         ajaxFactory.getRequest('group_nodes_list', '', '')
             .success(function (data, status, headers, config) {
+                $scope.group_nodes_list = {};
                 $scope.group_nodes_list = updateFactory.updateGroupNodesList(data.group_nodes);
             }).error(function(data, status, headers, config){});
     };
@@ -273,8 +274,6 @@ function groupHierarchyController( $scope, ajaxFactory, updateFactory ) {
 function groupHierarchyVotesController( $scope, ajaxFactory, updateFactory ) {
     $scope.init = function() {
         $scope.act_type = '';
-        $scope.group_nodes_count_list = {};
-        $scope.group_nodes_for_comparison_list = {};
         $scope.message = '';
         $scope.entity_type = '';
         $scope.save_nodes_v = '';
@@ -294,6 +293,8 @@ function groupHierarchyVotesController( $scope, ajaxFactory, updateFactory ) {
     $scope.update = function() {
         ajaxFactory.getRequest('group_nodes_list', '', '')
             .success(function (data, status, headers, config) {
+                $scope.group_nodes_count_list = {};
+                $scope.group_nodes_for_comparison_list = {};
                 var temp = updateFactory.updateGroupNodesVotesList(data.group_nodes);
                 $scope.group_nodes_count_list = temp.count;
                 $scope.group_nodes_for_comparison_list = temp.type;
@@ -334,10 +335,7 @@ function groupsController( $scope, ajaxFactory, updateFactory  ) {
     $scope.Math = window.Math;
     $scope.init = function() {
         $scope.act_type = '';
-        $scope.group_hash = {};
         $scope.settab = 'question';
-        $scope.user_hash = {};
-        $scope.user_list = [];
         $scope.users_answer_hierarchy = {};
         $scope.text = ''
         $scope.update();
@@ -350,10 +348,13 @@ function groupsController( $scope, ajaxFactory, updateFactory  ) {
     $scope.update = function() {
         ajaxFactory.getRequest('groups_list', '', '')
             .success(function(data, status, headers, config) {
+                $scope.group_hash = {};
                 $scope.group_hash = updateFactory.updateGroupHash(data);
             }).error(function(data, status, headers, config){});
         ajaxFactory.getRequest('users_list', '', '')
-            .success(function(data, status, headers, config) {
+                .success(function(data, status, headers, config) {
+                $scope.user_hash = {};
+                $scope.user_list = [];
                 //$scope.user_hash = updateFactory.updateUserHash(data.users);
                 $scope.user_list = updateFactory.updateUserList(data.users);
             }).error(function(data, status, headers, config){})
@@ -474,12 +475,6 @@ function hierarchyController( $scope, ajaxFactory, updateFactory ) {
     $scope.init = function() {
         $scope.act_type = '';
         $scope.graphics = '';
-        $scope.adjacency_list = {};
-        $scope.node_hash = {};
-        $scope.level_hash = {};
-        $scope.level_nodes_list = {}; //уровни с вершинами  level_nodes_list['1'] = [n1]
-        $scope.level_order = []; //порядок уровней =
-        $scope.edges_list = [];
         $scope.update();
     };
 
@@ -491,6 +486,11 @@ function hierarchyController( $scope, ajaxFactory, updateFactory ) {
         ajaxFactory.getRequest('common_hierarchy', '', '')
             .success(function(data, status, headers, config) {
                 //по-другому оформить
+                $scope.node_hash = {};
+                $scope.level_hash = {};
+                $scope.level_nodes_list = {}; //уровни с вершинами  level_nodes_list['1'] = [n1]
+                $scope.level_order = []; //порядок уровней =
+                $scope.edges_list = [];
                 $scope.node_hash = updateFactory.updateNodeHash(data.nodes);
                 $scope.level_hash = updateFactory.updateLevelHash(data.levels);
                 $scope.level_order = updateFactory.updateLevelOrder(data.levels);
@@ -571,19 +571,11 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
 
     $scope.init = function() {
         $scope.act_type = '';
-        $scope.group_hash = {};
-        $scope.user_confidence_list = [];
-        $scope.checked_user_list = [];
         $scope.checked_group_list = [];
         $scope.all = false
-        $scope.node_hash = {};
-        $scope.level_nodes_list = {};
-        $scope.level_order = [];
-        $scope.level_hash = {};
         $scope.result = {};
         $scope.all_result = {};
         $scope.type = '';
-        $scope.group_priority = {};
         $scope.show_priority = false;
         $scope.calculated = false;
         $scope.update();
@@ -636,15 +628,24 @@ function globalPriorityController( $scope, ajaxFactory, updateFactory ) {
     $scope.update = function() {
         ajaxFactory.getRequest('groups_list', '', '')
             .success(function(data, status, headers, config) {
+                $scope.group_hash = {};
                 $scope.group_hash = updateFactory.updateGroupPriority(data);
             }).error(function(data, status, headers, config){});
         ajaxFactory.getRequest('user_confidence_list', '', '')
             .success(function(data, status, headers, config) {
+                $scope.user_confidence_list = [];
+                $scope.checked_user_list = [];
                 $scope.user_confidence_list = updateFactory.updateUserConfidenceList(data.users).info;
                 $scope.checked_user_list = updateFactory.updateUserConfidenceList(data.users).list;
             }).error(function(data, status, headers, config){})
         ajaxFactory.getRequest('common_hierarchy', '', '')
             .success(function(data, status, headers, config) {
+                $scope.node_hash = {};
+                $scope.level_nodes_list = {};
+                $scope.level_order = [];
+                $scope.level_hash = {};
+                $scope.group_priority = {};
+
                 $scope.node_priority = updateFactory.updateNodePriority(data.nodes);
                 $scope.node_hash = updateFactory.updateNodeHash(data.nodes);
                 $scope.level_hash = updateFactory.updateLevelHash(data.levels);
